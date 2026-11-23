@@ -1,0 +1,2972 @@
+```html
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#064e3b" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>HadithSlide Studio AI — Generator Carousel Hadist Otomatis</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Arabic (Amiri & Scheherazade New) + Latin (Plus Jakarta Sans & Playfair Display) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Scheherazade+New:wght@400;700&display=swap" rel="stylesheet" />
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- html2canvas & JSZip for High-Resolution 1080px PNG & ZIP Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            serif: ['"Playfair Display"', 'serif'],
+            amiri: ['"Amiri"', 'serif'],
+            scheherazade: ['"Scheherazade New"', 'serif'],
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Studio Canvas Dot Pattern */
+    .studio-canvas-bg {
+      background-color: #eef2f6;
+      background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+
+    /* Custom Range Slider */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 9999px;
+      background: #e2e8f0;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 18px;
+      width: 18px;
+      border-radius: 50%;
+      background: #064e3b;
+      border: 2px solid #ffffff;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+      margin-top: -6px;
+      transition: transform 0.15s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.12);
+    }
+
+    /* Arabic RTL & Harakat protection */
+    .arabic-text-block {
+      direction: rtl;
+      unicode-bidi: isolate;
+      word-spacing: 2px;
+    }
+
+    /* Subtle pulse animation for swipe prompt in live simulator */
+    @keyframes nudgeRight {
+      0%, 100% { transform: translateX(0); }
+      50% { transform: translateX(4px); }
+    }
+    .animate-nudge {
+      animation: nudgeRight 1.6s ease-in-out infinite;
+    }
+
+    /* Slide transition inside interactive swipe simulator */
+    @keyframes slideFadeIn {
+      from { opacity: 0.45; transform: scale(0.985); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .simulator-slide-enter {
+      animation: slideFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased selection:bg-emerald-100 selection:text-emerald-900">
+
+  <!-- Toast Notification Container (Replaces alert/confirm) -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none max-w-sm w-full px-4 sm:px-0"></div>
+
+  <!-- Offscreen Container for 1:1 Unscaled High-Res 1080px Export -->
+  <div id="export-stage" class="fixed -left-[9999px] top-0 pointer-events-none opacity-100" aria-hidden="true"></div>
+
+  <!-- Android APK Build Guide Modal -->
+  <div id="apk-guide-modal" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[88vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+      <div class="px-5 py-4 bg-gradient-to-r from-emerald-950 to-emerald-800 text-white flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-amber-300">
+            <i data-lucide="smartphone" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-sm sm:text-base">Jadikan Aplikasi APK Android</h3>
+            <p class="text-[11px] text-emerald-200">Siap di-install di HP dengan penyimpanan draf offline & share langsung ke Galeri</p>
+          </div>
+        </div>
+        <button type="button" id="btn-close-apk-guide" class="p-2 rounded-xl hover:bg-white/10 text-white transition cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-5 overflow-y-auto space-y-5 text-xs sm:text-sm text-slate-700">
+        <!-- Method 1: Capacitor -->
+        <div class="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-2.5">
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-bold text-emerald-950 flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded-md bg-emerald-900 text-amber-300 text-[11px]">Cara 1 (Terbaik)</span>
+              Compile APK via Capacitor CLI
+            </span>
+            <button type="button" id="btn-copy-capacitor-cmd" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white hover:bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-semibold transition cursor-pointer">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+              <span>Salin Perintah</span>
+            </button>
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Simpan file HTML ini sebagai <code class="px-1.5 py-0.5 rounded bg-white border border-emerald-200 font-mono">www/index.html</code> di dalam folder proyek baru, lalu jalankan perintah berikut di terminal (membutuhkan Node.js & Android Studio):
+          </p>
+          <pre id="capacitor-commands-text" class="p-3 rounded-xl bg-slate-900 text-emerald-300 font-mono text-[11px] overflow-x-auto leading-relaxed">npm init -y
+npm install @capacitor/core @capacitor/cli @capacitor/android
+npx cap init "HadithSlide AI" "com.dakwah.hadithslide" --web-dir www
+npx cap add android
+npx cap sync
+cd android &amp;&amp; ./gradlew assembleDebug</pre>
+          <p class="text-[11px] text-emerald-900 font-medium">
+            Hasil file instalasi siap pakai akan muncul di: <code class="font-mono bg-white px-1.5 py-0.5 rounded">android/app/build/outputs/apk/debug/app-debug.apk</code>
+          </p>
+        </div>
+
+        <!-- Method 2: PWABuilder -->
+        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+          <div class="font-bold text-slate-900 flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded-md bg-amber-600 text-white text-[11px]">Cara 2 (Tanpa Coding)</span>
+            Bungkus Instan via PWABuilder
+          </div>
+          <ol class="list-decimal list-inside space-y-1.5 text-xs text-slate-600 leading-relaxed">
+            <li>Upload file <code class="font-mono bg-white px-1 rounded border">hadithslide-studio.html</code> (ubah nama menjadi <code class="font-mono bg-white px-1 rounded border">index.html</code>) ke hosting gratis seperti <strong>Vercel</strong>, <strong>Netlify</strong>, atau <strong>GitHub Pages</strong>.</li>
+            <li>Buka situs <strong>pwabuilder.com</strong>, masukkan URL aplikasi Anda, lalu klik <strong>Package for Stores → Android</strong>.</li>
+            <li>Unduh paket Android dan install file <code class="font-mono bg-white px-1 rounded border">.apk</code> langsung di HP Anda.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Navigation Header -->
+  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200 shadow-2xs">
+    <div class="max-w-[1640px] mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2 sm:gap-3">
+      <!-- Brand Identity -->
+      <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-emerald-900 to-emerald-700 flex items-center justify-center text-amber-300 shadow-sm shrink-0">
+          <svg class="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 32 32" fill="none">
+            <rect x="6" y="6" width="20" height="20" rx="2" stroke="currentColor" stroke-width="1.8" />
+            <rect x="6" y="6" width="20" height="20" rx="2" transform="rotate(45 16 16)" stroke="currentColor" stroke-width="1.8" />
+            <circle cx="16" cy="16" r="3.5" fill="currentColor" />
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-slate-900 text-sm sm:text-lg tracking-tight truncate">HadithSlide Studio AI</h1>
+            <span class="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+              Gemini AI • Android Ready
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 truncate hidden sm:block">Ubah Hadist Jadi Carousel Dakwah Otomatis dengan AI</p>
+        </div>
+      </div>
+
+      <!-- Header Actions -->
+      <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <!-- Quick Gemini API Key Status Pill -->
+        <button
+          id="header-api-status"
+          type="button"
+          title="Pengaturan Gemini API Key"
+          class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100 transition cursor-pointer"
+        >
+          <span id="header-api-dot" class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span id="header-api-label" class="max-w-[92px] sm:max-w-none truncate">Set API Key</span>
+        </button>
+
+        <button
+          id="btn-open-apk-guide"
+          type="button"
+          title="Panduan Compile APK Android"
+          class="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition cursor-pointer"
+        >
+          <i data-lucide="smartphone" class="w-3.5 h-3.5 text-emerald-800"></i>
+          <span>APK Android</span>
+        </button>
+
+        <button
+          id="btn-reset"
+          type="button"
+          title="Kembalikan pengaturan awal"
+          class="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition cursor-pointer"
+        >
+          <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+          <span class="hidden xl:inline">Reset</span>
+        </button>
+
+        <button
+          id="btn-share-native"
+          type="button"
+          title="Bagikan ke Instagram / WhatsApp / Galeri HP"
+          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-emerald-950 bg-amber-100 hover:bg-amber-200 border border-amber-300 transition cursor-pointer"
+        >
+          <i data-lucide="share-2" class="w-4 h-4 text-amber-800"></i>
+          <span class="hidden md:inline">Share / Galeri</span>
+        </button>
+
+        <button
+          id="btn-download-current"
+          type="button"
+          title="Unduh slide yang sedang tampil"
+          class="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-emerald-900 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition cursor-pointer"
+        >
+          <i data-lucide="image-down" class="w-4 h-4 text-emerald-700"></i>
+          <span class="hidden lg:inline">Unduh Slide</span>
+        </button>
+
+        <button
+          id="btn-download-zip"
+          type="button"
+          class="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-semibold text-white bg-emerald-900 hover:bg-emerald-800 active:scale-[0.99] shadow-sm transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          <i data-lucide="archive" class="w-4 h-4 text-amber-300"></i>
+          <span id="zip-btn-label" class="hidden sm:inline">Download ZIP</span>
+          <span class="sm:hidden">ZIP</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Two-Column Studio Workspace -->
+  <main class="max-w-[1640px] mx-auto flex flex-col lg:flex-row min-h-[calc(100vh-4rem)] pb-20 lg:pb-0">
+
+    <!-- LEFT COLUMN: AI Generator, Storytelling & Design Editor -->
+    <aside id="editor-sidebar" class="w-full lg:w-[460px] xl:w-[495px] shrink-0 bg-white border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-col">
+
+      <!-- 1-Click Indonesian Storytelling Presets -->
+      <div class="p-3.5 sm:p-4 bg-gradient-to-r from-slate-50 to-emerald-50/40 border-b border-slate-200">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+            <i data-lucide="bookmark-check" class="w-3.5 h-3.5 text-emerald-700"></i>
+            Contoh Preset Cepat (1-Klik)
+          </span>
+          <span class="text-[11px] text-slate-400">5 topik pilihan</span>
+        </div>
+        <div id="preset-buttons" class="flex flex-wrap gap-1.5">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- Editor Primary 3 Tabs (AI & API Key | Edit Teks | Tema & Gaya) -->
+      <div class="grid grid-cols-3 border-b border-slate-200 bg-white sticky top-16 z-20">
+        <button
+          type="button"
+          data-tab="ai"
+          class="tab-btn active flex items-center justify-center gap-1.5 py-3.5 text-xs sm:text-sm font-semibold border-b-2 border-emerald-800 text-emerald-900 bg-emerald-50/40 transition cursor-pointer"
+        >
+          <i data-lucide="sparkles" class="w-4 h-4 text-amber-600"></i>
+          <span>AI & API Key</span>
+        </button>
+        <button
+          type="button"
+          data-tab="story"
+          class="tab-btn flex items-center justify-center gap-1.5 py-3.5 text-xs sm:text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition cursor-pointer"
+        >
+          <i data-lucide="layers" class="w-4 h-4"></i>
+          <span>Edit Teks</span>
+        </button>
+        <button
+          type="button"
+          data-tab="design"
+          class="tab-btn flex items-center justify-center gap-1.5 py-3.5 text-xs sm:text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition cursor-pointer"
+        >
+          <i data-lucide="palette" class="w-4 h-4"></i>
+          <span>Tema & Gaya</span>
+        </button>
+      </div>
+
+      <!-- TAB 0 (DEFAULT): AI GENERATOR, GEMINI API KEY & OFFLINE DRAFTS -->
+      <div id="panel-ai" class="p-4 space-y-4 overflow-y-auto flex-1">
+
+        <!-- CARD 1: GEMINI API KEY CONFIGURATION -->
+        <div class="rounded-2xl border border-slate-200 bg-white shadow-2xs overflow-hidden">
+          <div class="px-4 py-3 bg-slate-50 border-b border-slate-200/80 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-lg bg-emerald-900 text-amber-300 flex items-center justify-center">
+                <i data-lucide="key-round" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <h2 class="text-xs font-bold text-slate-900">Konfigurasi Gemini API Key</h2>
+                <p class="text-[11px] text-slate-500">Tersimpan aman secara lokal di memori perangkat</p>
+              </div>
+            </div>
+            <span id="api-badge-status" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+              Belum Diatur
+            </span>
+          </div>
+
+          <div class="p-4 space-y-3">
+            <div>
+              <label for="input-gemini-key" class="block text-xs font-semibold text-slate-700 mb-1">Google Gemini API Key</label>
+              <div class="relative flex items-center">
+                <input
+                  id="input-gemini-key"
+                  type="password"
+                  autocomplete="off"
+                  placeholder="AIzaSy..."
+                  class="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm font-mono focus:outline-none focus:border-emerald-700"
+                />
+                <button
+                  type="button"
+                  id="btn-toggle-key-visibility"
+                  title="Tampilkan / Sembunyikan API Key"
+                  class="absolute right-2.5 p-1.5 rounded-lg text-slate-400 hover:text-slate-700 transition cursor-pointer"
+                >
+                  <i data-lucide="eye" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label for="select-gemini-model" class="block text-xs font-semibold text-slate-700 mb-1">Model AI Gemini</label>
+              <select id="select-gemini-model" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm bg-white font-medium focus:outline-none focus:border-emerald-700">
+                <option value="gemini-2.5-flash">gemini-2.5-flash (Cepat & Hemat Kuota — Rekomendasi)</option>
+                <option value="gemini-2.5-pro">gemini-2.5-pro (Analisis Mendalam & Puitis)</option>
+              </select>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 pt-0.5">
+              <button
+                type="button"
+                id="btn-save-api-key"
+                class="col-span-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-900 hover:bg-emerald-800 text-white text-xs font-semibold transition cursor-pointer"
+              >
+                <i data-lucide="save" class="w-3.5 h-3.5 text-amber-300"></i>
+                <span>Simpan</span>
+              </button>
+              <button
+                type="button"
+                id="btn-test-api-key"
+                class="col-span-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 text-xs font-semibold transition cursor-pointer"
+              >
+                <i data-lucide="wifi" class="w-3.5 h-3.5"></i>
+                <span>Tes Koneksi</span>
+              </button>
+              <button
+                type="button"
+                id="btn-delete-api-key"
+                class="col-span-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-200 hover:border-rose-200 text-xs font-semibold transition cursor-pointer"
+              >
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                <span>Hapus</span>
+              </button>
+            </div>
+
+            <!-- Collapsible Guide for Obtaining Free Gemini API Key -->
+            <details class="rounded-xl bg-slate-50 border border-slate-200/80 px-3 py-2 text-xs text-slate-600">
+              <summary class="font-semibold text-emerald-900 cursor-pointer select-none flex items-center justify-between">
+                <span>Cara mendapatkan API Key Gemini gratis</span>
+                <i data-lucide="help-circle" class="w-3.5 h-3.5 text-emerald-700"></i>
+              </summary>
+              <ol class="mt-2 space-y-1 list-decimal list-inside text-[11px] leading-relaxed text-slate-600">
+                <li>Buka <strong>aistudio.google.com</strong> dan login dengan akun Google Anda.</li>
+                <li>Klik tombol <strong>Get API key</strong> lalu pilih <strong>Create API key</strong>.</li>
+                <li>Salin kode yang berawalan <code class="bg-white px-1 rounded border">AIza...</code>, tempel di kolom atas, lalu tekan <strong>Simpan</strong>.</li>
+              </ol>
+            </details>
+          </div>
+        </div>
+
+        <!-- CARD 2: AI CAROUSEL AUTO-GENERATOR -->
+        <div class="rounded-2xl border-2 border-emerald-800/20 bg-gradient-to-b from-emerald-50/50 via-white to-white shadow-sm overflow-hidden">
+          <div class="px-4 py-3 bg-gradient-to-r from-emerald-950 to-emerald-800 text-white flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i data-lucide="wand-2" class="w-4 h-4 text-amber-300"></i>
+              <h2 class="text-xs sm:text-sm font-bold tracking-tight">Generate Otomatis dengan Gemini AI</h2>
+            </div>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/20 text-amber-200 border border-amber-300/30">
+              Auto-Storytelling
+            </span>
+          </div>
+
+          <div class="p-4 space-y-3.5">
+            <div>
+              <label for="input-ai-prompt" class="block text-xs font-semibold text-slate-800 mb-1">
+                Masukkan Teks Hadits atau Topik Kajian
+              </label>
+              <textarea
+                id="input-ai-prompt"
+                rows="4"
+                placeholder="Tempelkan teks hadits mentah (Arab / terjemah / campuran) ATAU ketik topik hadits, contoh:&#10;• Hadits tentang senyum adalah sedekah&#10;• Hadits larangan marah dan janji surga&#10;• Atau tempelkan langsung matan hadits lengkap di sini..."
+                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-xs sm:text-sm leading-relaxed focus:outline-none focus:border-emerald-700"
+              ></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label for="select-ai-style" class="block text-[11px] font-semibold text-slate-700 mb-1">Gaya Bahasa & Hook</label>
+                <select id="select-ai-style" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white font-medium focus:outline-none focus:border-emerald-700">
+                  <option value="Penasaran & Storytelling">Penasaran &amp; Storytelling</option>
+                  <option value="Reflektif & Menyentuh Hati">Reflektif &amp; Menyentuh Hati</option>
+                  <option value="Tegas & Menggugah">Tegas &amp; Menggugah</option>
+                  <option value="Tenang & Menyejukkan">Tenang &amp; Menyejukkan</option>
+                </select>
+              </div>
+              <div>
+                <label for="select-ai-quote-count" class="block text-[11px] font-semibold text-slate-700 mb-1">Slide Kutipan Sebelum Dalil</label>
+                <select id="select-ai-quote-count" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white font-medium focus:outline-none focus:border-emerald-700">
+                  <option value="2">2 Slide Kutipan (Ideal)</option>
+                  <option value="1">1 Slide Kutipan (Ringkas)</option>
+                  <option value="3">3 Slide Kutipan (Mendalam)</option>
+                </select>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              id="btn-generate-ai"
+              class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-800 hover:from-emerald-800 hover:to-teal-700 text-white font-bold text-xs sm:text-sm shadow-md active:scale-[0.99] transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <i id="ai-btn-icon" data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i>
+              <span id="ai-btn-label">Generate Carousel Otomatis</span>
+            </button>
+
+            <p class="text-[11px] text-slate-500 text-center leading-snug">
+              AI otomatis memilihkan <strong>tema islami</strong>, <strong>hook cover</strong>, <strong>kutipan pemantik</strong>, <strong>matan Arab &amp; terjemah</strong>, hingga <strong>hikmah &amp; ajakan diskusi</strong>.
+            </p>
+          </div>
+        </div>
+
+        <!-- CARD 3: RIWAYAT DRAF LOKAL (OFFLINE STORAGE DI HP) -->
+        <div class="rounded-2xl border border-slate-200 bg-white shadow-2xs overflow-hidden">
+          <div class="px-4 py-3 bg-slate-50 border-b border-slate-200/80 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <i data-lucide="folder-heart" class="w-4 h-4 text-emerald-800"></i>
+              <span class="text-xs font-bold text-slate-900">Riwayat Draf Lokal (Offline)</span>
+            </div>
+            <button
+              type="button"
+              id="btn-save-draft"
+              class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-900 hover:bg-emerald-800 text-white text-[11px] font-semibold transition cursor-pointer"
+            >
+              <i data-lucide="plus" class="w-3 h-3 text-amber-300"></i>
+              <span>Simpan Draf</span>
+            </button>
+          </div>
+          <div id="drafts-list" class="p-3 space-y-2 max-h-56 overflow-y-auto">
+            <!-- Populated dynamically from localStorage -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- TAB 1: ALUR CERITA & DALIL (COLLAPSIBLE STORYTELLING SECTIONS) -->
+      <div id="panel-story" class="hidden p-4 space-y-3.5 overflow-y-auto flex-1">
+              data-ratio="1:1"
+              class="ratio-btn flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 hover:border-slate-300 bg-white text-left transition cursor-pointer"
+            >
+              <div class="w-7 h-7 rounded border-2 border-slate-500 bg-slate-100 shrink-0"></div>
+              <div>
+                <div class="text-xs font-bold text-slate-900">1:1 Square</div>
+                <div class="text-[11px] text-slate-500">1080×1080 px</div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Font Selectors -->
+        <div class="space-y-3">
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">
+            Pasangan Tipografi
+          </label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label for="select-arabic-font" class="block text-xs font-medium text-slate-700 mb-1">Font Teks Arab</label>
+              <select id="select-arabic-font" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:border-emerald-700">
+                <option value="amiri">Amiri (Naskh Klasik)</option>
+                <option value="scheherazade">Scheherazade New</option>
+              </select>
+            </div>
+            <div>
+              <label for="select-latin-font" class="block text-xs font-medium text-slate-700 mb-1">Font Teks Latin</label>
+              <select id="select-latin-font" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white focus:outline-none focus:border-emerald-700">
+                <option value="sans">Plus Jakarta Sans</option>
+                <option value="serif">Playfair Display</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Font Size Sliders -->
+        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label for="slider-arabic-size" class="text-xs font-semibold text-slate-700">Ukuran Teks Arab</label>
+              <span id="val-arabic-size" class="text-xs font-bold text-emerald-900 bg-white px-2 py-0.5 rounded border border-slate-200">29 px</span>
+            </div>
+            <input id="slider-arabic-size" type="range" min="20" max="42" step="1" value="29" class="w-full" />
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label for="slider-latin-size" class="text-xs font-semibold text-slate-700">Ukuran Teks Terjemah & Kutipan</label>
+              <span id="val-latin-size" class="text-xs font-bold text-emerald-900 bg-white px-2 py-0.5 rounded border border-slate-200">20 px</span>
+            </div>
+            <input id="slider-latin-size" type="range" min="15" max="28" step="1" value="20" class="w-full" />
+          </div>
+        </div>
+
+        <!-- Retention Visual Toggles -->
+        <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+          <span class="block text-xs font-bold uppercase tracking-wider text-slate-500">Elemen Retensi & Ornamen</span>
+
+          <label class="flex items-center justify-between cursor-pointer">
+            <div>
+              <span class="text-sm font-medium text-slate-800 block">Progress Bar Cerita (Atas)</span>
+              <span class="text-[11px] text-slate-500">Garis progres segmen seperti IG Story</span>
+            </div>
+            <input id="toggle-progress-bar" type="checkbox" checked class="sr-only peer" />
+            <div class="w-10 h-5.5 bg-slate-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all relative peer-checked:bg-emerald-800 shrink-0"></div>
+          </label>
+
+          <div class="border-t border-slate-200/80"></div>
+
+          <label class="flex items-center justify-between cursor-pointer">
+            <div>
+              <span class="text-sm font-medium text-slate-800 block">Kaligrafi Bismillah (Slide 1)</span>
+              <span class="text-[11px] text-slate-500">Lafaz Basmalah pembuka di slide sampul</span>
+            </div>
+            <input id="toggle-bismillah" type="checkbox" checked class="sr-only peer" />
+            <div class="w-10 h-5.5 bg-slate-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all relative peer-checked:bg-emerald-800 shrink-0"></div>
+          </label>
+
+          <div class="border-t border-slate-200/80"></div>
+
+          <label class="flex items-center justify-between cursor-pointer">
+            <div>
+              <span class="text-sm font-medium text-slate-800 block">Jembatan Geser (Cliffhanger)</span>
+              <span class="text-[11px] text-slate-500">Teks pemancing geser di bagian bawah slide</span>
+            </div>
+            <input id="toggle-swipe-bridge" type="checkbox" checked class="sr-only peer" />
+            <div class="w-10 h-5.5 bg-slate-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all relative peer-checked:bg-emerald-800 shrink-0"></div>
+          </label>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- RIGHT WORKSPACE: Interactive Swipe Simulator & Grid Overview -->
+    <section class="flex-1 flex flex-col min-w-0 studio-canvas-bg">
+
+      <!-- Preview Top Mode & Control Bar -->
+      <div class="bg-white/95 backdrop-blur border-b border-slate-200 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+        <!-- Mode Switcher Pill (Interactive Swipe vs Grid) -->
+        <div class="inline-flex p-1 rounded-xl bg-slate-100 border border-slate-200/90">
+          <button
+            type="button"
+            data-preview-mode="simulator"
+            class="mode-btn active inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-white text-emerald-950 shadow-xs transition cursor-pointer"
+          >
+            <i data-lucide="smartphone" class="w-3.5 h-3.5 text-emerald-700"></i>
+            <span>Simulasi Swipe (Interaktif)</span>
+          </button>
+          <button
+            type="button"
+            data-preview-mode="grid"
+            class="mode-btn inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition cursor-pointer"
+          >
+            <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
+            <span>Semua Slide (Grid)</span>
+          </button>
+        </div>
+
+        <!-- Slide Telemetry & Zoom Controls -->
+        <div class="flex items-center gap-2.5">
+          <div class="hidden sm:flex items-center gap-2 text-xs font-semibold text-slate-700 bg-slate-100 px-3 py-1.5 rounded-lg">
+            <span id="summary-slide-total" class="text-emerald-900">5 Slide</span>
+            <span class="text-slate-300">•</span>
+            <span id="summary-dimensions" class="text-slate-500">1080×1350 px</span>
+          </div>
+
+          <!-- Zoom Controls (Visible in Grid mode) -->
+          <div id="grid-zoom-controls" class="hidden items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/80">
+            <button id="btn-zoom-out" type="button" title="Perkecil" class="p-1.5 rounded-lg hover:bg-white text-slate-600 transition cursor-pointer">
+              <i data-lucide="zoom-out" class="w-3.5 h-3.5"></i>
+            </button>
+            <span id="zoom-label" class="text-xs font-bold text-slate-700 min-w-[42px] text-center">60%</span>
+            <button id="btn-zoom-in" type="button" title="Perbesar" class="p-1.5 rounded-lg hover:bg-white text-slate-600 transition cursor-pointer">
+              <i data-lucide="zoom-in" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 1: INTERACTIVE SWIPE SIMULATOR (MOBILE / IG CAROUSEL VIEWER) -->
+      <div id="view-simulator" class="flex-1 flex flex-col items-center justify-center px-4 py-6 sm:py-8 overflow-y-auto">
+        <div class="w-full max-w-[480px] flex flex-col items-center">
+
+          <!-- Mock Instagram Post Header -->
+          <div class="w-full bg-white rounded-t-2xl border border-b-0 border-slate-200/90 px-4 py-2.5 flex items-center justify-between shadow-2xs">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 via-emerald-700 to-emerald-950 p-[2px] shrink-0">
+                <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-emerald-900 font-bold text-xs">
+                  ☪
+                </div>
+              </div>
+              <div class="min-w-0">
+                <div id="sim-account-name" class="text-xs font-bold text-slate-900 truncate">@jejak.hikmah</div>
+                <div id="sim-role-subtitle" class="text-[10px] text-slate-500 truncate">Slide 1 • Hook Cover</div>
+              </div>
+            </div>
+            <span id="sim-slide-pill" class="px-2.5 py-1 rounded-full bg-slate-900 text-white text-[11px] font-bold tracking-wide">
+              1 / 5
+            </span>
+          </div>
+
+          <!-- Interactive Swipe Stage with Prev / Next Floating Arrows -->
+          <div class="relative w-full flex items-center justify-center bg-slate-900/5 border-x border-slate-200/90">
+            <!-- Previous Slide Button -->
+            <button
+              id="sim-prev-btn"
+              type="button"
+              title="Slide Sebelumnya (Panah Kiri)"
+              class="absolute left-2.5 z-20 w-9 h-9 rounded-full bg-white/90 hover:bg-white text-slate-900 shadow-lg border border-slate-200/80 flex items-center justify-center transition active:scale-95 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+            >
+              <i data-lucide="chevron-left" class="w-5 h-5"></i>
+            </button>
+
+            <!-- Touch/Mouse Swipeable Slide Viewport -->
+            <div
+              id="sim-touch-surface"
+              class="w-full overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing select-none"
+            >
+              <div id="sim-slide-mount" class="simulator-slide-enter">
+                <!-- Active slide rendered here -->
+              </div>
+            </div>
+
+            <!-- Next Slide Button -->
+            <button
+              id="sim-next-btn"
+              type="button"
+              title="Slide Berikutnya (Panah Kanan)"
+              class="absolute right-2.5 z-20 w-9 h-9 rounded-full bg-white/90 hover:bg-white text-slate-900 shadow-lg border border-slate-200/80 flex items-center justify-center transition active:scale-95 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+            >
+              <i data-lucide="chevron-right" class="w-5 h-5"></i>
+            </button>
+          </div>
+
+          <!-- Mock Instagram Interactive Engagement Footer -->
+          <div class="w-full bg-white rounded-b-2xl border border-t-0 border-slate-200/90 px-4 py-3 shadow-md space-y-2.5">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-4">
+                <button id="sim-like-btn" type="button" class="text-slate-700 hover:text-rose-600 transition cursor-pointer" title="Simulasi Like">
+                  <i data-lucide="heart" class="w-5 h-5"></i>
+                </button>
+                <button type="button" onclick="goToSlide(buildSlidesData().length - 1)" class="text-slate-700 hover:text-emerald-800 transition cursor-pointer" title="Lompat ke Slide Pertanyaan Komentar">
+                  <i data-lucide="message-circle" class="w-5 h-5"></i>
+                </button>
+                <button type="button" onclick="downloadSingleSlide(state.currentSlideIndex)" class="text-slate-700 hover:text-emerald-800 transition cursor-pointer" title="Unduh Slide Ini (PNG)">
+                  <i data-lucide="send" class="w-5 h-5"></i>
+                </button>
+              </div>
+
+              <!-- Carousel Dot Indicators -->
+              <div id="sim-dots" class="flex items-center gap-1.5">
+                <!-- Populated dynamically -->
+              </div>
+
+              <button id="sim-save-btn" type="button" class="text-slate-700 hover:text-amber-600 transition cursor-pointer" title="Simulasi Bookmark">
+                <i data-lucide="bookmark" class="w-5 h-5"></i>
+              </button>
+            </div>
+
+            <!-- Interactive Slide Stepper Pills -->
+            <div id="sim-step-pills" class="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <p class="mt-3 text-[11px] text-slate-500 text-center">
+            Gunakan tombol panah keyboard (<kbd class="px-1.5 py-0.5 bg-white border border-slate-300 rounded text-[10px]">←</kbd> <kbd class="px-1.5 py-0.5 bg-white border border-slate-300 rounded text-[10px]">→</kbd>), geser layar, atau klik dot untuk menguji alur cerita.
+          </p>
+        </div>
+      </div>
+
+      <!-- VIEW 2: ALL SLIDES GRID OVERVIEW -->
+      <div id="view-grid" class="hidden flex-1 overflow-x-auto overflow-y-auto px-4 sm:px-8 py-6 sm:py-8 flex items-start">
+        <div id="slides-track" class="flex items-start gap-6 sm:gap-8 mx-auto my-auto pb-4">
+          <!-- All slide cards rendered here -->
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Android Mobile Bottom App Navigation Bar (Screens < 1024px) -->
+  <nav id="mobile-bottom-nav" class="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-slate-200 shadow-lg grid grid-cols-3 h-16">
+    <button
+      type="button"
+      data-mobile-nav="ai"
+      class="mobile-nav-btn active flex flex-col items-center justify-center gap-1 text-emerald-900 font-bold text-[11px] cursor-pointer"
+    >
+      <i data-lucide="sparkles" class="w-5 h-5 text-amber-600"></i>
+      <span>AI &amp; Teks</span>
+    </button>
+    <button
+      type="button"
+      data-mobile-nav="design"
+      class="mobile-nav-btn flex flex-col items-center justify-center gap-1 text-slate-500 font-medium text-[11px] cursor-pointer"
+    >
+      <i data-lucide="palette" class="w-5 h-5"></i>
+      <span>Tema &amp; Gaya</span>
+    </button>
+    <button
+      type="button"
+      data-mobile-nav="preview"
+      class="mobile-nav-btn flex flex-col items-center justify-center gap-1 text-slate-500 font-medium text-[11px] cursor-pointer"
+    >
+      <i data-lucide="smartphone" class="w-5 h-5"></i>
+      <span>Preview &amp; Ekspor</span>
+    </button>
+  </nav>
+
+  <script>
+    /**
+     * =========================================================================
+     * HADITHSLIDE STUDIO — HIGH-RETENTION STORYTELLING ENGINE
+     * =========================================================================
+     */
+
+    // 1. 5 RICH INDONESIAN STORYTELLING PRESETS (HOOK -> KUTIPAN INTI -> DALIL -> HIKMAH -> PENUTUP)
+    const STORY_PRESETS = [
+      {
+        id: 'niat',
+        label: 'Rahasia Niat',
+        category: 'RENUNGAN',
+        series: 'SERI TADABBUR #01',
+        hookTitle: 'Mengapa Amal Besar Bisa ==Sia-Sia== di Sisi Allah?',
+        hookSubtitle: 'Banyak orang lelah beribadah & bekerja keras, namun lupa memeriksa satu kunci tersembunyi ini...',
+        hookCta: 'Geser untuk jawabannya →',
+        preQuotes: 'Ternyata, Allah tidak menilai seberapa besar tampilan amalmu di mata manusia.\n---\nDua orang bisa melakukan ibadah yang sama persis, di waktu yang sama—namun yang satu meraih ==pahala surga==, dan yang lain pulang dengan ==tangan hampa==.',
+        quoteBridge: 'Simak sabda Rasulullah ﷺ berikut →',
+        arabic: 'إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ، وَإِنَّمَا لِكُلِّ امْرِئٍ مَا نَوَى، فَمَنْ كَانَتْ هِجْرَتُهُ إِلَى اللهِ وَرَسُولِهِ فَهِجْرَتُهُ إِلَى اللهِ وَرَسُولِهِ',
+        translation: 'Sesungguhnya setiap amalan tergantung pada ==niatnya==, dan setiap orang akan mendapatkan balasan sesuai dengan ==apa yang ia niatkan==. Barang siapa yang hijrahnya karena Allah dan Rasul-Nya, maka hijrahnya itu kepada Allah dan Rasul-Nya.',
+        source: 'HR. Bukhari No. 1 & Muslim No. 1907',
+        hikmah: 'Perbarui niat sebelum memulai aktivitas harian agar bernilai ibadah\nJauhkan hati dari keinginan dipuji manusia (riya)\nAmal duniawi seperti bekerja & belajar bisa berpahala besar bila diniatkan lillahi ta’ala',
+        closingQuestion: 'Sudahkah kita meluruskan niat sebelum beraktivitas hari ini? Tulis refleksimu di komentar!',
+        cta: 'Simpan postingan ini sebagai pengingat diri & bagikan ke orang tersayang.',
+        watermark: '@jejak.hikmah'
+      },
+      {
+        id: 'sedekah',
+        label: 'Sedekah Tanpa Modal',
+        category: 'MUAMALAH',
+        series: 'SERI TADABBUR #02',
+        hookTitle: 'Sedekah Tanpa Uang: Amalan Ringan yang ==Sering Diremehkan==',
+        hookSubtitle: 'Belum punya harta berlebih untuk bersedekah? Tenang, Islam membuka pintu pahala yang sangat luas...',
+        hookCta: 'Geser untuk rahasianya →',
+        preQuotes: 'Sering kali kita menunda bersedekah karena merasa dompet sedang pas-pasan. Padahal, raut wajah yang ==tulus & ramah== saja sudah dicatat sebagai sedekah di langit.',
+        quoteBridge: 'Ini sabda Nabi ﷺ tentangnya →',
+        arabic: 'تَبَسُّمُكَ فِي وَجْهِ أَخِيكَ لَكَ صَدَقَةٌ، وَأَمْرُكَ بِالمَعْرُوفِ وَنَهْيُكَ عَنِ المُنْكَرِ صَدَقَةٌ',
+        translation: '==Senyummu== di hadapan saudaramu (sesama muslim) adalah bernilai ==sedekah== bagimu. Amar ma’ruf (mengajak pada kebaikan) dan nahi munkar (mencegah kemungkaran) yang engkau lakukan juga bernilai sedekah.',
+        source: 'HR. Tirmidzi No. 1956 (Hasan)',
+        hikmah: 'Tebarkan senyum tulus saat bertemu keluarga, rekan, dan tetangga\nJangan remehkan kebaikan kecil yang dilakukan secara konsisten\nJadikan lisan dan sikap sebagai jalan pembuka pahala setiap hari',
+        closingQuestion: 'Siapa orang pertama yang ingin kamu beri senyum & sapaan hangat hari ini?',
+        cta: 'Simpan pengingat ini & bagikan agar semakin banyak kebaikan tersebar.',
+        watermark: '@jejak.hikmah'
+      },
+      {
+        id: 'amarah',
+        label: 'Kunci Amarah',
+        category: 'TAZKIYATUN NAFS',
+        series: 'SERI TADABBUR #03',
+        hookTitle: 'Satu Kalimat Nabi ﷺ yang Menyelamatkanmu dari ==Penyesalan Besar==',
+        hookSubtitle: 'Berapa banyak hubungan rusak & keputusan keliru lahir hanya karena emosi sesaat?',
+        hookCta: 'Geser untuk wasiatnya →',
+        preQuotes: 'Orang yang kuat bukanlah yang tak terkalahkan saat bertarung, melainkan ia yang mampu ==menguasai dirinya== ketika api amarah sedang memuncak.',
+        quoteBridge: 'Perhatikan wasiat singkat Rasulullah ﷺ ini →',
+        arabic: 'لَا تَغْضَبْ وَلَكَ الْجَنَّةُ',
+        translation: 'Seorang sahabat meminta nasihat singkat kepada Nabi ﷺ. Beliau bersabda: "==Janganlah engkau marah==." Sahabat itu mengulanginya berkali-kali, dan beliau tetap menjawab: "==Janganlah engkau marah, maka bagimu surga==."',
+        source: 'HR. Bukhari No. 6116 & Thabrani',
+        hikmah: 'Segera ucapkan Ta’awudz dan diam saat emosi mulai naik\nUbah posisi (duduk jika berdiri, berbaring jika duduk) atau berwudhu\nIngat bahwa menahan marah adalah tiket langsung menuju surga',
+        closingQuestion: 'Cara apa yang paling ampuh bagimu untuk meredakan emosi saat sedang marah?',
+        cta: 'Simpan agar tidak lupa saat emosi datang & bagikan ke sahabatmu.',
+        watermark: '@jejak.hikmah'
+      },
+      {
+        id: 'ilmu',
+        label: 'Jalan Pintas Surga',
+        category: 'KEUTAMAAN ILMU',
+        series: 'SERI TADABBUR #04',
+        hookTitle: 'Ternyata Ada ==Jalan Pintas== Menuju Surga yang Bisa Ditempuh Setiap Hari',
+        hookSubtitle: 'Bukan hanya lewat ibadah yang berat, tapi lewat langkah kaki dan waktu yang kamu luangkan untuk belajar...',
+        hookCta: 'Geser untuk keutamaannya →',
+        preQuotes: 'Setiap menit yang kamu habiskan untuk memahami agama Allah sedang ==memangkas jarakmu== menuju surga dan mengundang doa para malaikat.',
+        quoteBridge: 'Simak janji mulia dalam hadits ini →',
+        arabic: 'مَنْ سَلَكَ طَرِيقًا يَلْتَمِسُ فِيهِ عِلْمًا، سَهَّلَ اللَّهُ لَهُ بِهِ طَرِيقًا إِلَى الْجَنَّةِ',
+        translation: 'Barang siapa yang menempuh suatu jalan untuk ==mencari ilmu agama==, maka Allah akan ==mudahkan baginya jalan menuju surga==.',
+        source: 'HR. Muslim No. 2699',
+        hikmah: 'Luangkan minimal 15 menit sehari untuk mengkaji Al-Qur’an & Hadits\nNiatkan belajar untuk memperbaiki amal, bukan sekadar berdebat\nBagikan ilmu yang baru dipelajari agar melekat kuat di hati',
+        closingQuestion: 'Kajian atau buku islami apa yang sedang kamu pelajari pekan ini?',
+        cta: 'Simpan postingan ini & ajak temanmu menuntut ilmu bersama.',
+        watermark: '@jejak.hikmah'
+      },
+      {
+        id: 'kaya',
+        label: 'Hakikat Kaya Sejati',
+        category: 'PENYEJUK HATI',
+        series: 'SERI TADABBUR #05',
+        hookTitle: 'Mengapa Hati Tetap Merasa ==Kurang== Meski Rezeki Terus Bertambah?',
+        hookSubtitle: 'Jika ukuran bahagia hanya angka di rekening, rasa cukup tak akan pernah tiba...',
+        hookCta: 'Geser untuk obat hatinya →',
+        preQuotes: 'Betapa banyak orang berharta melimpah namun tidurnya gelisah, sementara ada yang hidup sederhana namun hatinya penuh ==ketenangan & syukur==.',
+        quoteBridge: 'Dengarkan definisi kaya menurut Nabi ﷺ →',
+        arabic: 'لَيْسَ الْغِنَى عَنْ كَثْرَةِ الْعَرَضِ، وَلَكِنَّ الْغِنَى غِنَى النَّفْسِ',
+        translation: 'Bukanlah kekayaan itu karena ==banyaknya harta benda==, akan tetapi kekayaan yang sejati adalah ==kaya hati (jiwa yang selalu merasa cukup)==.',
+        source: 'HR. Bukhari No. 6446 & Muslim No. 1051',
+        hikmah: 'Biasakan melihat orang di bawah kita dalam urusan dunia agar mudah bersyukur\nLatih sifat Qana’ah: ridha atas pembagian rezeki Allah hari ini\nKaya hati melahirkan ketenangan yang tak bisa dibeli dengan uang',
+        closingQuestion: 'Satu nikmat kecil hari ini yang paling kamu syukuri apa? Tulis di bawah!',
+        cta: 'Simpan sebagai pengingat qana’ah & bagikan ke orang terdekatmu.',
+        watermark: '@jejak.hikmah'
+      }
+    ];
+
+    // 2. 5 COHESIVE ISLAMIC THEMES (WITH BALANCED CONTRAST & HIGHLIGHT COLORS)
+    const ISLAMIC_THEMES = {
+      zamrud: {
+        id: 'zamrud',
+        name: 'Zamrud Nabawi',
+        desc: 'Hijau zamrud pekat & aksen emas antik',
+        swatchBg: '#064E3B',
+        swatchAccent: '#D4AF37',
+        bgStyle: 'background: radial-gradient(circle at 50% 22%, #065F46 0%, #043927 65%, #022C22 100%);',
+        textPrimary: '#FEFCE8',
+        textSecondary: '#FDE68A',
+        textMuted: '#A7F3D0',
+        accent: '#D4AF37',
+        highlightBg: 'rgba(212, 175, 55, 0.26)',
+        highlightText: '#FEF08A',
+        pillBg: 'rgba(212, 175, 55, 0.16)',
+        pillBorder: 'rgba(212, 175, 55, 0.48)',
+        pillText: '#FDE68A',
+        cardOverlay: 'rgba(2, 44, 34, 0.50)',
+        borderColor: '#D4AF37',
+        patternColor: '#D4AF37',
+        patternOpacity: '0.075'
+      },
+      andalusia: {
+        id: 'andalusia',
+        name: 'Kubah Andalusia',
+        desc: 'Perkamen hangat & lengkung terakota',
+        swatchBg: '#FDF8F0',
+        swatchAccent: '#9A3412',
+        bgStyle: 'background: linear-gradient(180deg, #FDF8F0 0%, #F6EDE0 100%);',
+        textPrimary: '#292524',
+        textSecondary: '#7C2D12',
+        textMuted: '#78716C',
+        accent: '#9A3412',
+        highlightBg: 'rgba(180, 83, 9, 0.16)',
+        highlightText: '#7C2D12',
+        pillBg: 'rgba(154, 52, 18, 0.10)',
+        pillBorder: 'rgba(154, 52, 18, 0.35)',
+        pillText: '#9A3412',
+        cardOverlay: 'rgba(255, 255, 255, 0.72)',
+        borderColor: '#B45309',
+        patternColor: '#9A3412',
+        patternOpacity: '0.06'
+      },
+      lailatul: {
+        id: 'lailatul',
+        name: 'Lailatul Qadr',
+        desc: 'Biru malam elegan & bintang emas lembut',
+        swatchBg: '#0F172A',
+        swatchAccent: '#EAB308',
+        bgStyle: 'background: radial-gradient(circle at 80% 15%, #1E293B 0%, #0F172A 55%, #070B14 100%);',
+        textPrimary: '#F8FAFC',
+        textSecondary: '#FDE047',
+        textMuted: '#94A3B8',
+        accent: '#EAB308',
+        highlightBg: 'rgba(234, 179, 8, 0.24)',
+        highlightText: '#FEF08A',
+        pillBg: 'rgba(234, 179, 8, 0.14)',
+        pillBorder: 'rgba(234, 179, 8, 0.45)',
+        pillText: '#FACC15',
+        cardOverlay: 'rgba(15, 23, 42, 0.58)',
+        borderColor: '#EAB308',
+        patternColor: '#EAB308',
+        patternOpacity: '0.07'
+      },
+      madinah: {
+        id: 'madinah',
+        name: 'Fajar Madinah',
+        desc: 'Gading bersih, pasir hangat & hijau zaitun',
+        swatchBg: '#FAF8F5',
+        swatchAccent: '#3F6212',
+        bgStyle: 'background: linear-gradient(160deg, #FAF8F5 0%, #F1EDE4 100%);',
+        textPrimary: '#1C1917',
+        textSecondary: '#365314',
+        textMuted: '#57534E',
+        accent: '#3F6212',
+        highlightBg: 'rgba(63, 98, 18, 0.15)',
+        highlightText: '#365314',
+        pillBg: 'rgba(63, 98, 18, 0.10)',
+        pillBorder: 'rgba(63, 98, 18, 0.32)',
+        pillText: '#3F6212',
+        cardOverlay: 'rgba(255, 255, 255, 0.78)',
+        borderColor: '#4D7C0F',
+        patternColor: '#3F6212',
+        patternOpacity: '0.055'
+      },
+      hikmah: {
+        id: 'hikmah',
+        name: 'Malam Hikmah',
+        desc: 'Obsidian gelap modern & sorotan emas amber',
+        swatchBg: '#121214',
+        swatchAccent: '#F59E0B',
+        bgStyle: 'background: radial-gradient(circle at 20% 15%, #27272A 0%, #141416 60%, #09090B 100%);',
+        textPrimary: '#FAFAFA',
+        textSecondary: '#FBBF24',
+        textMuted: '#A1A1AA',
+        accent: '#F59E0B',
+        highlightBg: 'rgba(245, 158, 11, 0.25)',
+        highlightText: '#FDE68A',
+        pillBg: 'rgba(245, 158, 11, 0.15)',
+        pillBorder: 'rgba(245, 158, 11, 0.45)',
+        pillText: '#FBBF24',
+        cardOverlay: 'rgba(24, 24, 27, 0.72)',
+        borderColor: '#F59E0B',
+        patternColor: '#F59E0B',
+        patternOpacity: '0.06'
+      }
+    };
+
+    // 3. APPLICATION STATE
+    const STORAGE_KEYS = {
+      API_KEY: 'hadithslide_gemini_api_key',
+      MODEL: 'hadithslide_gemini_model',
+      DRAFTS: 'hadithslide_local_drafts'
+    };
+
+    const defaultState = {
+      activeTab: 'ai',
+      previewMode: 'simulator', // 'simulator' | 'grid'
+      currentSlideIndex: 0,
+
+      // Gemini AI & Local Drafts State
+      geminiApiKey: '',
+      geminiModel: 'gemini-2.5-flash',
+      aiPrompt: '',
+      aiStyle: 'Penasaran & Storytelling',
+      aiQuoteCount: '2',
+      drafts: [],
+
+      // Slide 1: Hook Cover
+      category: STORY_PRESETS[0].category,
+      series: STORY_PRESETS[0].series,
+      hookTitle: STORY_PRESETS[0].hookTitle,
+      hookSubtitle: STORY_PRESETS[0].hookSubtitle,
+      hookCta: STORY_PRESETS[0].hookCta,
+
+      // Slide 2+: Pre-Dalil Core Quotes
+      includePreQuotes: true,
+      preQuotes: STORY_PRESETS[0].preQuotes,
+      quoteBridge: STORY_PRESETS[0].quoteBridge,
+
+      // Dalil Hadits
+      arabic: STORY_PRESETS[0].arabic,
+      showArabic: true,
+      translation: STORY_PRESETS[0].translation,
+      charsPerSlide: 230,
+      source: STORY_PRESETS[0].source,
+
+      // Hikmah & Closing
+      includeHikmah: true,
+      hikmah: STORY_PRESETS[0].hikmah,
+      includeClosing: true,
+      closingQuestion: STORY_PRESETS[0].closingQuestion,
+      cta: STORY_PRESETS[0].cta,
+      watermark: STORY_PRESETS[0].watermark,
+
+      // Visual & Typography
+      themeId: 'zamrud',
+      aspectRatio: '4:5', // '4:5' -> 540x675 (exports 1080x1350) | '1:1' -> 540x540 (exports 1080x1080)
+      arabicFont: 'amiri',
+      latinFont: 'sans',
+      arabicSize: 29,
+      latinSize: 20,
+      showProgressBar: true,
+      showBismillah: true,
+      showSwipeBridge: true,
+      zoom: 0.60,
+
+      // Simulator mock interaction state
+      simLiked: false,
+      simSaved: false
+    };
+
+    let state = { ...defaultState };
+
+    // Clipboard helper using document.execCommand('copy') for iframe/WebView compatibility
+    function copyTextToClipboard(text, successMsg = 'Teks berhasil disalin!') {
+      const tempArea = document.createElement('textarea');
+      tempArea.value = text;
+      tempArea.style.position = 'fixed';
+      tempArea.style.left = '-9999px';
+      document.body.appendChild(tempArea);
+      tempArea.select();
+      try {
+        document.execCommand('copy');
+        showToast(successMsg, 'success');
+      } catch (err) {
+        showToast('Gagal menyalin teks secara otomatis.', 'warning');
+      }
+      tempArea.remove();
+    }
+
+    // 4. TOAST NOTIFICATION SYSTEM (NO ALERT/CONFIRM)
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+
+      const styles = {
+        success: 'bg-emerald-950 text-white border-emerald-700',
+        info: 'bg-slate-900 text-white border-slate-700',
+        warning: 'bg-amber-950 text-amber-50 border-amber-700'
+      };
+
+      const iconName = type === 'success' ? 'check-circle-2' : type === 'warning' ? 'alert-circle' : 'info';
+
+      toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg text-xs sm:text-sm font-medium transition-all duration-300 translate-y-2 opacity-0 ${styles[type] || styles.info}`;
+      toast.innerHTML = `
+        <i data-lucide="${iconName}" class="w-4 h-4 shrink-0 text-amber-300"></i>
+        <span class="flex-1 leading-snug">${escapeHtml(message)}</span>
+      `;
+
+      container.appendChild(toast);
+      lucide.createIcons({ nodes: [toast] });
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('translate-y-2', 'opacity-0');
+        setTimeout(() => toast.remove(), 300);
+      }, 3200);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Format text with ==highlight== markers into theme-accented spans
+    function formatHighlightedText(rawText, theme) {
+      const safe = escapeHtml(rawText || '');
+      return safe.replace(/==([^=]+)==/g, (_, inner) => {
+        return `<span style="background: ${theme.highlightBg}; color: ${theme.highlightText}; padding: 1px 7px; border-radius: 6px; font-weight: 700;">${inner}</span>`;
+      });
+    }
+
+    // Helper buttons for wrapping text in ==...== or inserting ---
+    function wrapSelectionWithHighlight(textareaId) {
+      const el = document.getElementById(textareaId);
+      if (!el) return;
+      const start = el.selectionStart;
+      const end = el.selectionEnd;
+      const val = el.value;
+
+      if (start === end) {
+        const placeholder = '==kata penting==';
+        el.value = val.substring(0, start) + placeholder + val.substring(end);
+        el.focus();
+        el.setSelectionRange(start + 2, start + placeholder.length - 2);
+      } else {
+        const selected = val.substring(start, end);
+        const wrapped = `==${selected}==`;
+        el.value = val.substring(0, start) + wrapped + val.substring(end);
+        el.focus();
+        el.setSelectionRange(start, start + wrapped.length);
+      }
+
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      showToast('Sorotan ==teks== diterapkan!', 'info');
+    }
+
+    function insertBreakAtCursor(textareaId) {
+      const el = document.getElementById(textareaId);
+      if (!el) return;
+      const start = el.selectionStart;
+      const end = el.selectionEnd;
+      const val = el.value;
+      const insertion = '\n---\n';
+
+      el.value = val.substring(0, start) + insertion + val.substring(end);
+      el.focus();
+      el.setSelectionRange(start + insertion.length, start + insertion.length);
+
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      showToast('Pemisah slide manual (---) disisipkan.', 'info');
+    }
+
+    // 5. SMART TEXT SPLITTING ENGINE (SENTENCE/WORD BOUNDARIES + MANUAL '---')
+    function splitTextSmartly(text, maxChars) {
+      const cleaned = (text || '').trim();
+      if (!cleaned) return [''];
+
+      const manualChunks = cleaned.split(/\n?\s*---\s*\n?/).map(c => c.trim()).filter(Boolean);
+      const finalChunks = [];
+
+      manualChunks.forEach(chunk => {
+        if (chunk.length <= maxChars) {
+          finalChunks.push(chunk);
+          return;
+        }
+
+        const sentences = chunk.match(/[^.!?]+[.!?]+["”']?\s*|[^.!?]+$/g) || [chunk];
+        let current = '';
+
+        sentences.forEach(sentence => {
+          const trimmedSentence = sentence.trim();
+          if (!trimmedSentence) return;
+
+          if ((current + ' ' + trimmedSentence).trim().length <= maxChars) {
+            current = (current + ' ' + trimmedSentence).trim();
+          } else {
+            if (current) {
+              finalChunks.push(current);
+              current = '';
+            }
+            if (trimmedSentence.length > maxChars) {
+              const words = trimmedSentence.split(/\s+/);
+              let wordBuffer = '';
+              words.forEach(word => {
+                if ((wordBuffer + ' ' + word).trim().length <= maxChars) {
+                  wordBuffer = (wordBuffer + ' ' + word).trim();
+                } else {
+                  if (wordBuffer) finalChunks.push(wordBuffer);
+                  wordBuffer = word;
+                }
+              });
+              if (wordBuffer) current = wordBuffer;
+            } else {
+              current = trimmedSentence;
+            }
+          }
+        });
+
+        if (current) finalChunks.push(current);
+      });
+
+      return finalChunks.length > 0 ? finalChunks : [''];
+    }
+
+    function splitArabicProportionally(arabicText, targetCount) {
+      const cleaned = (arabicText || '').trim();
+      if (!cleaned || !state.showArabic) return Array(targetCount).fill('');
+
+      if (cleaned.includes('---')) {
+        const manual = cleaned.split(/\n?\s*---\s*\n?/).map(s => s.trim());
+        return Array.from({ length: targetCount }, (_, i) => manual[i] || '');
+      }
+
+      if (targetCount <= 1) return [cleaned];
+
+      if (cleaned.length <= 185) {
+        return Array.from({ length: targetCount }, (_, i) => (i === 0 ? cleaned : ''));
+      }
+
+      const words = cleaned.split(/\s+/);
+      const wordsPerChunk = Math.ceil(words.length / targetCount);
+      const result = [];
+      for (let i = 0; i < targetCount; i++) {
+        result.push(words.slice(i * wordsPerChunk, (i + 1) * wordsPerChunk).join(' '));
+      }
+      return result;
+    }
+
+    // 6. BUILD COMPLETE CURIOSITY-DRIVEN CAROUSEL SLIDES ARRAY
+    function buildSlidesData() {
+      const slides = [];
+
+      // SLIDE 1: HOOK COVER (PEMANTIK PENASARAN)
+      slides.push({
+        type: 'hook',
+        roleBadge: (state.category || 'RENUNGAN').toUpperCase(),
+        shortLabel: 'Hook Cover',
+        series: state.series || '',
+        hookTitle: state.hookTitle || 'Mengapa Amal Besar Bisa ==Sia-Sia== di Sisi Allah?',
+        hookSubtitle: state.hookSubtitle || '',
+        hookCta: state.hookCta || 'Geser untuk jawabannya →',
+        watermark: state.watermark || '@jejak.hikmah',
+        bridgeText: state.hookCta || 'Geser untuk jawabannya →'
+      });
+
+      // SLIDE 2+: KUTIPAN INTI (SEBELUM DALIL)
+      const quoteChunks = (state.includePreQuotes && (state.preQuotes || '').trim().length > 0)
+        ? state.preQuotes.split(/\n?\s*---\s*\n?/).map(q => q.trim()).filter(Boolean)
+        : [];
+
+      quoteChunks.forEach((quoteText, idx) => {
+        const isLastQuote = idx === quoteChunks.length - 1;
+        slides.push({
+          type: 'quote',
+          roleBadge: quoteChunks.length > 1 ? `KUTIPAN INTI ${idx + 1}/${quoteChunks.length}` : 'KUTIPAN INTI',
+          shortLabel: quoteChunks.length > 1 ? `Kutipan ${idx + 1}` : 'Kutipan Inti',
+          quoteIndex: idx,
+          quoteTotal: quoteChunks.length,
+          quoteText,
+          watermark: state.watermark || '@jejak.hikmah',
+          bridgeText: isLastQuote
+            ? (state.quoteBridge || 'Simak sabda Rasulullah ﷺ berikut →')
+            : 'Jangan berhenti di sini →'
+        });
+      });
+
+      // NEXT SLIDE(S): DALIL HADITS UTAMA
+      const translationChunks = splitTextSmartly(
+        state.translation || 'Masukkan terjemahan matan hadits pada panel di sebelah kiri.',
+        state.charsPerSlide
+      );
+      const arabicChunks = splitArabicProportionally(state.arabic, translationChunks.length);
+
+      translationChunks.forEach((text, idx) => {
+        const isLastDalil = idx === translationChunks.length - 1;
+        slides.push({
+          type: 'dalil',
+          roleBadge: translationChunks.length > 1 ? `DALIL SHAHIH (${idx + 1}/${translationChunks.length})` : 'DALIL SHAHIH',
+          shortLabel: translationChunks.length > 1 ? `Dalil ${idx + 1}` : 'Dalil Hadits',
+          dalilIndex: idx,
+          dalilTotal: translationChunks.length,
+          arabic: arabicChunks[idx] || '',
+          translation: text,
+          source: state.source || 'Sumber Hadits',
+          watermark: state.watermark || '@jejak.hikmah',
+          bridgeText: !isLastDalil
+            ? 'Lanjutan sabda Nabi ﷺ →'
+            : (state.includeHikmah ? 'Ambil hikmahnya →' : 'Renungan penutup →')
+        });
+      });
+
+      // OPTIONAL HIKMAH / INTISARI SLIDE
+      if (state.includeHikmah && (state.hikmah || '').trim().length > 0) {
+        const points = state.hikmah
+          .split('\n')
+          .map(line => line.replace(/^[-•*\d.)]+\s*/, '').trim())
+          .filter(Boolean);
+
+        if (points.length > 0) {
+          slides.push({
+            type: 'hikmah',
+            roleBadge: 'HIKMAH & INTISARI',
+            shortLabel: 'Hikmah',
+            points,
+            source: state.source || 'Sumber Hadits',
+            watermark: state.watermark || '@jejak.hikmah',
+            bridgeText: state.includeClosing ? 'Refleksi & aksi →' : 'Bagikan kebaikan ↗'
+          });
+        }
+      }
+
+      // FINAL SLIDE: PENUTUP & INTERAKSI (CLOSING CTA)
+      if (state.includeClosing) {
+        slides.push({
+          type: 'closing',
+          roleBadge: 'REFLEKSI & AKSI',
+          shortLabel: 'Penutup',
+          closingQuestion: state.closingQuestion || 'Sudahkah kita mengamalkan pesan mulia ini hari ini?',
+          cta: state.cta || 'Simpan agar tidak lupa & bagikan ke orang tersayang.',
+          source: state.source || 'Sumber Hadits',
+          watermark: state.watermark || '@jejak.hikmah',
+          bridgeText: 'Bagikan kebaikan ↗'
+        });
+      }
+
+      return slides.map((s, idx) => ({
+        ...s,
+        slideNumber: idx + 1,
+        totalSlides: slides.length
+      }));
+    }
+
+    // 7. INLINE SVG ISLAMIC PATTERNS & ARCHITECTURAL FRAMES
+    function renderIslamicBackgroundPattern(theme, width, height) {
+      const c = theme.patternColor;
+      const op = theme.patternOpacity;
+
+      if (theme.id === 'zamrud') {
+        return `
+          <svg class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 ${width} ${height}" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="pat-zamrud" width="90" height="90" patternUnits="userSpaceOnUse">
+                <rect x="22.5" y="22.5" width="45" height="45" stroke="${c}" stroke-width="1" stroke-opacity="${op}" />
+                <rect x="22.5" y="22.5" width="45" height="45" transform="rotate(45 45 45)" stroke="${c}" stroke-width="1" stroke-opacity="${op}" />
+                <circle cx="45" cy="45" r="10" stroke="${c}" stroke-width="0.9" stroke-opacity="${op}" />
+              </pattern>
+            </defs>
+            <rect width="${width}" height="${height}" fill="url(#pat-zamrud)" />
+          </svg>
+        `;
+      }
+
+      if (theme.id === 'andalusia') {
+        return `
+          <svg class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 ${width} ${height}" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="pat-andalusia" width="72" height="72" patternUnits="userSpaceOnUse">
+                <path d="M36 0 L72 36 L36 72 L0 36 Z" stroke="${c}" stroke-width="0.9" stroke-opacity="${op}" />
+                <circle cx="36" cy="36" r="16" stroke="${c}" stroke-width="0.8" stroke-opacity="${op}" />
+              </pattern>
+            </defs>
+            <rect width="${width}" height="${height}" fill="url(#pat-andalusia)" />
+          </svg>
+        `;
+      }
+
+      if (theme.id === 'lailatul') {
+        return `
+          <svg class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 ${width} ${height}" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="${width * 0.5}" cy="${height * 0.5}" r="${width * 0.39}" stroke="${c}" stroke-width="1" stroke-opacity="${op}" stroke-dasharray="4 6" />
+            <circle cx="${width * 0.5}" cy="${height * 0.5}" r="${width * 0.28}" stroke="${c}" stroke-width="0.8" stroke-opacity="${op}" />
+            <rect x="${width * 0.25}" y="${height * 0.5 - width * 0.25}" width="${width * 0.5}" height="${width * 0.5}" stroke="${c}" stroke-width="0.8" stroke-opacity="${op}" />
+            <rect x="${width * 0.25}" y="${height * 0.5 - width * 0.25}" width="${width * 0.5}" height="${width * 0.5}" transform="rotate(45 ${width * 0.5} ${height * 0.5})" stroke="${c}" stroke-width="0.8" stroke-opacity="${op}" />
+          </svg>
+        `;
+      }
+
+      if (theme.id === 'hikmah') {
+        return `
+          <svg class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 ${width} ${height}" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="pat-hikmah" width="64" height="64" patternUnits="userSpaceOnUse">
+                <circle cx="32" cy="32" r="1.4" fill="${c}" fill-opacity="${op}" />
+                <path d="M32 16 L35 29 L48 32 L35 35 L32 48 L29 35 L16 32 L29 29 Z" stroke="${c}" stroke-width="0.6" stroke-opacity="${op}" />
+              </pattern>
+            </defs>
+            <rect width="${width}" height="${height}" fill="url(#pat-hikmah)" />
+          </svg>
+        `;
+      }
+
+      // Fajar Madinah
+      return `
+        <svg class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 ${width} ${height}" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="pat-madinah" width="80" height="80" patternUnits="userSpaceOnUse">
+              <path d="M40 8 L48 32 L72 40 L48 48 L40 72 L32 48 L8 40 L32 32 Z" stroke="${c}" stroke-width="0.8" stroke-opacity="${op}" />
+              <circle cx="40" cy="40" r="3" fill="${c}" fill-opacity="${op}" />
+            </pattern>
+          </defs>
+          <rect width="${width}" height="${height}" fill="url(#pat-madinah)" />
+        </svg>
+      `;
+    }
+
+    function renderThemeFrame(theme, width, height) {
+      const b = theme.borderColor;
+      if (theme.id === 'andalusia') {
+        const m = 18;
+        const archPeakY = m + 56;
+        const archShoulderY = m + 120;
+        return `
+          <svg class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 ${width} ${height}" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="12" y="12" width="${width - 24}" height="${height - 24}" rx="16" stroke="${b}" stroke-width="1.3" stroke-opacity="0.4" />
+            <path d="M ${m} ${archShoulderY}
+                     Q ${m} ${archPeakY + 12}, ${width / 2} ${m + 8}
+                     Q ${width - m} ${archPeakY + 12}, ${width - m} ${archShoulderY}
+                     L ${width - m} ${height - m}
+                     L ${m} ${height - m} Z"
+                  stroke="${b}" stroke-width="1.4" stroke-opacity="0.62" />
+          </svg>
+        `;
+      }
+
+      return `
+        <svg class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 ${width} ${height}" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="15" y="15" width="${width - 30}" height="${height - 30}" rx="18" stroke="${b}" stroke-width="1.5" stroke-opacity="0.52" />
+          <rect x="22" y="22" width="${width - 44}" height="${height - 44}" rx="13" stroke="${b}" stroke-width="0.8" stroke-opacity="0.32" />
+          <g transform="translate(22, 22)">
+            <path d="M0 0 L22 0 L0 22 Z" fill="${b}" fill-opacity="0.18" />
+            <circle cx="7.5" cy="7.5" r="2" fill="${b}" fill-opacity="0.75" />
+          </g>
+          <g transform="translate(${width - 22}, 22) scale(-1, 1)">
+            <path d="M0 0 L22 0 L0 22 Z" fill="${b}" fill-opacity="0.18" />
+            <circle cx="7.5" cy="7.5" r="2" fill="${b}" fill-opacity="0.75" />
+          </g>
+          <g transform="translate(22, ${height - 22}) scale(1, -1)">
+            <path d="M0 0 L22 0 L0 22 Z" fill="${b}" fill-opacity="0.18" />
+            <circle cx="7.5" cy="7.5" r="2" fill="${b}" fill-opacity="0.75" />
+          </g>
+          <g transform="translate(${width - 22}, ${height - 22}) scale(-1, -1)">
+            <path d="M0 0 L22 0 L0 22 Z" fill="${b}" fill-opacity="0.18" />
+            <circle cx="7.5" cy="7.5" r="2" fill="${b}" fill-opacity="0.75" />
+          </g>
+        </svg>
+      `;
+    }
+
+    function renderOrnamentDivider(color) {
+      return `
+        <svg class="w-44 h-5 mx-auto shrink-0" viewBox="0 0 200 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <line x1="10" y1="11" x2="80" y2="11" stroke="${color}" stroke-width="1" stroke-opacity="0.5" />
+          <line x1="120" y1="11" x2="190" y2="11" stroke="${color}" stroke-width="1" stroke-opacity="0.5" />
+          <rect x="95" y="6" width="10" height="10" transform="rotate(45 100 11)" stroke="${color}" stroke-width="1.3" />
+          <circle cx="100" cy="11" r="2" fill="${color}" />
+        </svg>
+      `;
+    }
+
+    // 8. RENDER CANONICAL 540px SLIDE MARKUP (EXPORTS AT 2X = 1080px)
+    function renderSlideMarkup(slide, isInteractiveView = false) {
+      const theme = ISLAMIC_THEMES[state.themeId] || ISLAMIC_THEMES.zamrud;
+      const width = 540;
+      const height = state.aspectRatio === '1:1' ? 540 : 675;
+
+      const arabicFontClass = state.arabicFont === 'scheherazade' ? 'font-scheherazade' : 'font-amiri';
+      const latinFontClass = state.latinFont === 'serif' ? 'font-serif' : 'font-sans';
+
+      const isFirstSlide = slide.slideNumber === 1;
+      const isLastSlide = slide.slideNumber === slide.totalSlides;
+
+      // Top Segmented Story Progress Bar (Psychological Momentum)
+      const storyProgressHtml = state.showProgressBar
+        ? `<div class="relative z-10 flex items-center gap-1.5 mb-3">
+             ${Array.from({ length: slide.totalSlides }, (_, idx) => {
+               const filled = idx < slide.slideNumber;
+               return `<div class="h-1 flex-1 rounded-full" style="background: ${filled ? theme.accent : theme.pillBorder}; opacity: ${filled ? '0.95' : '0.45'};"></div>`;
+             }).join('')}
+           </div>`
+        : '';
+
+      // Consistent Top Role & Series Header
+      const headerHtml = `
+        <div class="relative z-10">
+          ${storyProgressHtml}
+          <div class="flex items-center justify-between gap-2">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase"
+                 style="background: ${theme.pillBg}; border: 1px solid ${theme.pillBorder}; color: ${theme.pillText};">
+              <span class="w-1.5 h-1.5 rounded-full" style="background: ${theme.accent};"></span>
+              <span>${escapeHtml(slide.roleBadge)}</span>
+            </div>
+
+            <div class="flex items-center gap-1.5">
+              ${
+                slide.series && slide.type === 'hook'
+                  ? `<span class="px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase"
+                           style="background: ${theme.cardOverlay}; border: 1px solid ${theme.pillBorder}; color: ${theme.textMuted};">
+                       ${escapeHtml(slide.series)}
+                     </span>`
+                  : ''
+              }
+              <span class="px-2.5 py-1 rounded-full text-[11px] font-extrabold tracking-wider"
+                    style="background: ${theme.pillBg}; border: 1px solid ${theme.pillBorder}; color: ${theme.pillText};">
+                ${slide.slideNumber}/${slide.totalSlides}
+              </span>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Consistent Bottom Watermark & Cliffhanger Bridge
+      const footerHtml = `
+        <div class="relative z-10 pt-3 border-t flex items-center justify-between gap-3 text-xs"
+             style="border-color: ${theme.pillBorder};">
+          <div class="font-bold truncate" style="color: ${theme.textSecondary};">
+            ${escapeHtml(slide.watermark)}
+          </div>
+          ${
+            state.showSwipeBridge
+              ? `<div class="inline-flex items-center gap-1.5 font-bold tracking-wide text-[11px] px-3 py-1 rounded-full shrink-0 ${isInteractiveView && !isLastSlide ? 'animate-nudge' : ''}"
+                      style="background: ${theme.pillBg}; border: 1px solid ${theme.pillBorder}; color: ${theme.pillText};">
+                   <span>${escapeHtml(slide.bridgeText)}</span>
+                 </div>`
+              : `<div class="text-[11px] font-medium truncate" style="color: ${theme.textMuted};">
+                   ${escapeHtml(slide.source || '')}
+                 </div>`
+          }
+        </div>
+      `;
+
+      // BODY RENDERING PER SLIDE ROLE
+      let bodyHtml = '';
+
+      if (slide.type === 'hook') {
+        const bismillahHtml = state.showBismillah
+          ? `<p class="font-amiri text-2xl mb-2" style="color: ${theme.textSecondary}; line-height: 1.8;">
+               بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
+             </p>`
+          : '';
+
+        bodyHtml = `
+          <div class="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-3 py-2">
+            ${bismillahHtml}
+            <div class="mb-3">${renderOrnamentDivider(theme.accent)}</div>
+
+            <h2 class="${latinFontClass} font-extrabold leading-tight mb-4"
+                style="font-size: ${state.aspectRatio === '1:1' ? '30px' : '35px'}; color: ${theme.textPrimary};">
+              ${formatHighlightedText(slide.hookTitle, theme)}
+            </h2>
+
+            ${
+              slide.hookSubtitle
+                ? `<p class="${latinFontClass} leading-relaxed max-w-[420px] mb-4"
+                      style="font-size: 16px; color: ${theme.textMuted};">
+                     ${formatHighlightedText(slide.hookSubtitle, theme)}
+                   </p>`
+                : ''
+            }
+
+            <div class="mt-1">${renderOrnamentDivider(theme.accent)}</div>
+          </div>
+        `;
+      } else if (slide.type === 'quote') {
+        bodyHtml = `
+          <div class="relative z-10 flex-1 flex flex-col justify-center px-3 py-2">
+            <!-- Large Decorative Opening Quote Mark -->
+            <div class="mb-2 flex items-center gap-2">
+              <span class="font-serif font-bold leading-none select-none" style="font-size: 54px; color: ${theme.accent}; opacity: 0.75;">“</span>
+              <div class="h-[1px] flex-1" style="background: ${theme.pillBorder};"></div>
+            </div>
+
+            <div class="p-5 rounded-2xl" style="background: ${theme.cardOverlay}; border: 1px solid ${theme.pillBorder};">
+              <p class="${latinFontClass} font-medium leading-relaxed"
+                 style="font-size: ${Math.min(state.latinSize + 2, 26)}px; line-height: 1.65; color: ${theme.textPrimary};">
+                ${formatHighlightedText(slide.quoteText, theme)}
+              </p>
+            </div>
+
+            <div class="mt-3 flex items-center justify-end gap-2">
+              <div class="h-[1px] w-16" style="background: ${theme.pillBorder};"></div>
+              <span class="text-[11px] font-semibold italic" style="color: ${theme.textMuted};">
+                Renungan Sebelum Dalil
+              </span>
+            </div>
+          </div>
+        `;
+      } else if (slide.type === 'dalil') {
+        const hasArabic = state.showArabic && slide.arabic && slide.arabic.trim().length > 0;
+        bodyHtml = `
+          <div class="relative z-10 flex-1 flex flex-col justify-center px-1.5 py-2 overflow-hidden">
+            ${
+              hasArabic
+                ? `<div class="mb-4 px-3.5 py-3 rounded-2xl" style="background: ${theme.cardOverlay}; border: 1px solid ${theme.pillBorder};">
+                     <p class="arabic-text-block ${arabicFontClass} text-right"
+                        style="font-size: ${state.arabicSize}px; line-height: 2.08; color: ${theme.textSecondary};">
+                       ${escapeHtml(slide.arabic)}
+                     </p>
+                   </div>`
+                : ''
+            }
+
+            <div class="px-1">
+              <p class="${latinFontClass} leading-relaxed ${hasArabic ? 'text-left' : 'text-center'}"
+                 style="font-size: ${state.latinSize}px; line-height: 1.65; color: ${theme.textPrimary};">
+                “${formatHighlightedText(slide.translation, theme)}”
+              </p>
+            </div>
+
+            ${
+              slide.dalilIndex === slide.dalilTotal - 1
+                ? `<div class="mt-4 flex items-center ${hasArabic ? 'justify-start' : 'justify-center'}">
+                     <span class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold"
+                           style="background: ${theme.pillBg}; border: 1px solid ${theme.pillBorder}; color: ${theme.textSecondary};">
+                       <span>📜 ${escapeHtml(slide.source)}</span>
+                     </span>
+                   </div>`
+                : ''
+            }
+          </div>
+        `;
+      } else if (slide.type === 'hikmah') {
+        bodyHtml = `
+          <div class="relative z-10 flex-1 flex flex-col justify-center px-2 py-2">
+            <div class="mb-3.5">
+              <span class="text-[11px] font-bold uppercase tracking-[0.18em]" style="color: ${theme.accent};">
+                Pelajaran Utama
+              </span>
+              <h3 class="${latinFontClass} font-bold text-2xl mt-0.5" style="color: ${theme.textPrimary};">
+                Intisari yang Bisa Diamalkan
+              </h3>
+            </div>
+
+            <div class="space-y-2.5">
+              ${slide.points
+                .slice(0, 4)
+                .map(
+                  (pt, idx) => `
+                  <div class="flex items-start gap-3 p-3 rounded-xl" style="background: ${theme.cardOverlay}; border: 1px solid ${theme.pillBorder};">
+                    <span class="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-extrabold shrink-0 mt-0.5"
+                          style="background: ${theme.pillBg}; border: 1px solid ${theme.pillBorder}; color: ${theme.textSecondary};">
+                      ${idx + 1}
+                    </span>
+                    <p class="${latinFontClass} text-sm leading-snug font-medium" style="color: ${theme.textPrimary};">
+                      ${formatHighlightedText(pt, theme)}
+                    </p>
+                  </div>
+                `
+                )
+                .join('')}
+            </div>
+          </div>
+        `;
+      } else {
+        // CLOSING & ENGAGEMENT SLIDE
+        bodyHtml = `
+          <div class="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-4 py-2">
+            <div class="w-13 h-13 rounded-2xl flex items-center justify-center mb-3.5 p-3"
+                 style="background: ${theme.pillBg}; border: 1px solid ${theme.pillBorder}; color: ${theme.accent};">
+              <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+              </svg>
+            </div>
+
+            <span class="text-[11px] font-bold uppercase tracking-[0.2em] mb-2" style="color: ${theme.accent};">
+              Diskusi & Muhasabah
+            </span>
+
+            <h3 class="${latinFontClass} font-bold leading-snug mb-4"
+                style="font-size: 23px; color: ${theme.textPrimary};">
+              ${formatHighlightedText(slide.closingQuestion, theme)}
+            </h3>
+
+            <div class="mb-4">${renderOrnamentDivider(theme.accent)}</div>
+
+            <div class="p-3.5 rounded-2xl max-w-[400px]" style="background: ${theme.cardOverlay}; border: 1px solid ${theme.pillBorder};">
+              <p class="${latinFontClass} text-xs leading-relaxed font-medium" style="color: ${theme.textSecondary};">
+                ${escapeHtml(slide.cta)}
+              </p>
+            </div>
+          </div>
+        `;
+      }
+
+      return `
+        <div
+          class="hadith-slide-node relative overflow-hidden flex flex-col justify-between select-none"
+          data-slide-index="${slide.slideNumber - 1}"
+          style="width: ${width}px; height: ${height}px; padding: 34px 38px; ${theme.bgStyle}"
+        >
+          ${renderIslamicBackgroundPattern(theme, width, height)}
+          ${renderThemeFrame(theme, width, height)}
+          ${headerHtml}
+          ${bodyHtml}
+          ${footerHtml}
+        </div>
+      `;
+    }
+
+    // 9. RENDER WORKSPACE (BOTH INTERACTIVE SWIPE SIMULATOR & GRID VIEW)
+    function renderWorkspace() {
+      const slides = buildSlidesData();
+      if (state.currentSlideIndex >= slides.length) {
+        state.currentSlideIndex = Math.max(0, slides.length - 1);
+      }
+
+      // Update live counters in editor & header
+      const quoteCount = slides.filter(s => s.type === 'quote').length;
+      const dalilCount = slides.filter(s => s.type === 'dalil').length;
+      document.getElementById('prequote-slide-count').textContent = quoteCount;
+      document.getElementById('char-count').textContent = (state.translation || '').length;
+      document.getElementById('dalil-slide-count').textContent = dalilCount;
+      document.getElementById('summary-slide-total').textContent = `${slides.length} Slide`;
+      document.getElementById('summary-dimensions').textContent = state.aspectRatio === '1:1' ? '1080×1080 px' : '1080×1350 px';
+      document.getElementById('zoom-label').textContent = `${Math.round(state.zoom * 100)}%`;
+
+      // Toggle between Simulator View and Grid View
+      const simView = document.getElementById('view-simulator');
+      const gridView = document.getElementById('view-grid');
+      const gridZoom = document.getElementById('grid-zoom-controls');
+
+      if (state.previewMode === 'simulator') {
+        simView.classList.remove('hidden');
+        gridView.classList.add('hidden');
+        gridZoom.classList.add('hidden');
+        gridZoom.classList.remove('flex');
+        renderSimulatorView(slides);
+      } else {
+        simView.classList.add('hidden');
+        gridView.classList.remove('hidden');
+        gridZoom.classList.remove('hidden');
+        gridZoom.classList.add('flex');
+        renderGridView(slides);
+      }
+    }
+
+    function renderSimulatorView(slides) {
+      const activeSlide = slides[state.currentSlideIndex] || slides[0];
+      const baseWidth = 540;
+      const baseHeight = state.aspectRatio === '1:1' ? 540 : 675;
+
+      // Responsive scale inside the 480px simulator card
+      const containerWidth = Math.min(window.innerWidth - 36, 460);
+      const scale = +(containerWidth / baseWidth).toFixed(4);
+      const scaledHeight = Math.round(baseHeight * scale);
+
+      document.getElementById('sim-account-name').textContent = state.watermark || '@jejak.hikmah';
+      document.getElementById('sim-role-subtitle').textContent = `Slide ${activeSlide.slideNumber} • ${activeSlide.shortLabel}`;
+      document.getElementById('sim-slide-pill').textContent = `${activeSlide.slideNumber} / ${slides.length}`;
+
+      document.getElementById('sim-prev-btn').disabled = state.currentSlideIndex === 0;
+      document.getElementById('sim-next-btn').disabled = state.currentSlideIndex === slides.length - 1;
+
+      const touchSurface = document.getElementById('sim-touch-surface');
+      touchSurface.style.height = `${scaledHeight}px`;
+
+      const mount = document.getElementById('sim-slide-mount');
+      mount.style.width = `${containerWidth}px`;
+      mount.style.height = `${scaledHeight}px`;
+      mount.innerHTML = `
+        <div style="width: ${baseWidth}px; height: ${baseHeight}px; transform: scale(${scale}); transform-origin: top left;">
+          ${renderSlideMarkup(activeSlide, true)}
+        </div>
+      `;
+
+      // Retrigger subtle entrance animation
+      mount.classList.remove('simulator-slide-enter');
+      void mount.offsetWidth;
+      mount.classList.add('simulator-slide-enter');
+
+      // Render carousel dots
+      const dotsEl = document.getElementById('sim-dots');
+      dotsEl.innerHTML = slides
+        .map(
+          (_, idx) => `
+          <button
+            type="button"
+            onclick="goToSlide(${idx})"
+            aria-label="Ke slide ${idx + 1}"
+            class="h-2 rounded-full transition-all cursor-pointer ${
+              idx === state.currentSlideIndex ? 'w-5 bg-emerald-800' : 'w-2 bg-slate-300 hover:bg-slate-400'
+            }"
+          ></button>
+        `
+        )
+        .join('');
+
+      // Render clickable slide role pills
+      const stepPills = document.getElementById('sim-step-pills');
+      stepPills.innerHTML = slides
+        .map(
+          (s, idx) => `
+          <button
+            type="button"
+            onclick="goToSlide(${idx})"
+            class="px-2.5 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap transition cursor-pointer ${
+              idx === state.currentSlideIndex
+                ? 'bg-emerald-900 text-white shadow-2xs'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+            }"
+          >
+            ${s.slideNumber}. ${escapeHtml(s.shortLabel)}
+          </button>
+        `
+        )
+        .join('');
+    }
+
+    function renderGridView(slides) {
+      const track = document.getElementById('slides-track');
+      const baseWidth = 540;
+      const baseHeight = state.aspectRatio === '1:1' ? 540 : 675;
+      const scaledWidth = Math.round(baseWidth * state.zoom);
+      const scaledHeight = Math.round(baseHeight * state.zoom);
+
+      track.innerHTML = slides
+        .map(
+          (slide, idx) => `
+          <div id="slide-card-${idx}" class="flex flex-col items-center gap-3 shrink-0 group">
+            <div class="w-full flex items-center justify-between px-1">
+              <span class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                <span class="w-5 h-5 rounded-md bg-emerald-900 text-white text-[11px] flex items-center justify-center">${slide.slideNumber}</span>
+                <span>${escapeHtml(slide.shortLabel)}</span>
+              </span>
+              <span class="text-[11px] text-slate-400 font-medium">
+                ${state.aspectRatio === '1:1' ? '1080×1080' : '1080×1350'}
+              </span>
+            </div>
+
+            <div
+              onclick="inspectInSimulator(${idx})"
+              title="Klik untuk buka di Simulasi Swipe"
+              class="relative rounded-2xl overflow-hidden shadow-xl ring-1 ring-slate-900/10 bg-white transition-all duration-200 group-hover:shadow-2xl cursor-pointer"
+              style="width: ${scaledWidth}px; height: ${scaledHeight}px;"
+            >
+              <div style="width: ${baseWidth}px; height: ${baseHeight}px; transform: scale(${state.zoom}); transform-origin: top left;">
+                ${renderSlideMarkup(slide, false)}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onclick="downloadSingleSlide(${idx})"
+              class="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-white hover:bg-emerald-900 text-slate-700 hover:text-white border border-slate-200 hover:border-emerald-900 text-xs font-semibold shadow-2xs transition cursor-pointer"
+            >
+              <i data-lucide="download" class="w-3.5 h-3.5"></i>
+              <span>Unduh Slide ${slide.slideNumber} (PNG)</span>
+            </button>
+          </div>
+        `
+        )
+        .join('');
+
+      lucide.createIcons({ nodes: [track] });
+    }
+
+    function goToSlide(index) {
+      const slides = buildSlidesData();
+      state.currentSlideIndex = Math.max(0, Math.min(slides.length - 1, index));
+      renderWorkspace();
+    }
+
+    function inspectInSimulator(index) {
+      state.currentSlideIndex = index;
+      setPreviewMode('simulator');
+    }
+
+    function setPreviewMode(mode) {
+      state.previewMode = mode;
+      document.querySelectorAll('.mode-btn').forEach(btn => {
+        const active = btn.dataset.previewMode === mode;
+        btn.classList.toggle('bg-white', active);
+        btn.classList.toggle('text-emerald-950', active);
+        btn.classList.toggle('font-bold', active);
+        btn.classList.toggle('shadow-xs', active);
+        btn.classList.toggle('text-slate-600', !active);
+        btn.classList.toggle('font-semibold', !active);
+      });
+      renderWorkspace();
+    }
+
+    // 10. HIGH-RESOLUTION 1080px PNG & BATCH ZIP EXPORT ENGINE
+    async function captureSlideBlob(slideData) {
+      const exportStage = document.getElementById('export-stage');
+      exportStage.innerHTML = renderSlideMarkup(slideData, false);
+      const node = exportStage.firstElementChild;
+
+      if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready;
+      }
+
+      const canvas = await html2canvas(node, {
+        scale: 2, // 540px * 2 = exact 1080px width
+        useCORS: true,
+        backgroundColor: null,
+        logging: false
+      });
+
+      exportStage.innerHTML = '';
+
+      return new Promise((resolve, reject) => {
+        canvas.toBlob(blob => {
+          if (blob) resolve(blob);
+          else reject(new Error('Gagal mengonversi slide ke PNG.'));
+        }, 'image/png', 1.0);
+      });
+    }
+
+    async function downloadSingleSlide(index) {
+      try {
+        const slides = buildSlidesData();
+        const slide = slides[index];
+        if (!slide) return;
+
+        showToast(`Merender Slide ${slide.slideNumber} (1080px)...`, 'info');
+        const blob = await captureSlideBlob(slide);
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        const safeSlug = (state.category || 'hadith-slide')
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '') || 'hadith-slide';
+
+        link.href = url;
+        link.download = `${safeSlug}-slide-${String(slide.slideNumber).padStart(2, '0')}.png`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+
+        showToast(`Slide ${slide.slideNumber} (${slide.shortLabel}) berhasil diunduh!`, 'success');
+      } catch (err) {
+        console.error(err);
+        showToast('Terjadi kesalahan saat mengekspor PNG.', 'warning');
+      }
+    }
+
+    async function downloadAllAsZip() {
+      const btn = document.getElementById('btn-download-zip');
+      const label = document.getElementById('zip-btn-label');
+      const originalText = label.textContent;
+
+      try {
+        if (typeof JSZip === 'undefined') {
+          showToast('Pustaka JSZip sedang dimuat, coba sesaat lagi.', 'warning');
+          return;
+        }
+
+        btn.disabled = true;
+        const slides = buildSlidesData();
+        const zip = new JSZip();
+
+        const safeSlug = (state.category || 'hadith-carousel')
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '') || 'hadith-carousel';
+
+        for (let i = 0; i < slides.length; i++) {
+          label.textContent = `Merender ${i + 1}/${slides.length}...`;
+          const blob = await captureSlideBlob(slides[i]);
+          const fileName = `slide-${String(i + 1).padStart(2, '0')}-${slides[i].type}.png`;
+          zip.file(fileName, blob);
+        }
+
+        label.textContent = 'Mengemas ZIP...';
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+
+        const url = URL.createObjectURL(zipBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${safeSlug}-${slides.length}-slides.zip`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+
+        showToast(`Berhasil mengunduh ${slides.length} slide dalam arsip ZIP!`, 'success');
+      } catch (err) {
+        console.error(err);
+        showToast('Gagal membuat file ZIP. Silakan coba lagi.', 'warning');
+      } finally {
+        btn.disabled = false;
+        label.textContent = originalText;
+      }
+    }
+
+    // Native Android / Mobile Share API (Save directly to Phone Gallery or Share to IG/WA)
+    async function shareSlidesNative() {
+      try {
+        const slides = buildSlidesData();
+        const activeSlide = slides[state.currentSlideIndex] || slides[0];
+
+        showToast('Menyiapkan gambar beresolusi tinggi untuk dibagikan...', 'info');
+        const blob = await captureSlideBlob(activeSlide);
+        const safeSlug = (state.category || 'hadith-slide')
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '') || 'hadith-slide';
+        const fileName = `${safeSlug}-slide-${String(activeSlide.slideNumber).padStart(2, '0')}.png`;
+        const file = new File([blob], fileName, { type: 'image/png' });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: state.hookTitle.replace(/==/g, ''),
+            text: `${state.hookTitle.replace(/==/g, '')} — ${state.source}`,
+            files: [file]
+          });
+          showToast('Menu berbagi terbuka! Pilih Galeri / Instagram / WhatsApp.', 'success');
+        } else {
+          // Fallback to direct PNG download if browser lacks Web Share Files support
+          await downloadSingleSlide(state.currentSlideIndex);
+          showToast('Perangkat ini mengunduh langsung file PNG ke penyimpanan.', 'info');
+        }
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+        console.error(err);
+        await downloadSingleSlide(state.currentSlideIndex);
+      }
+    }
+
+    // GEMINI API KEY MANAGEMENT, AI CAROUSEL GENERATION & LOCAL DRAFTS
+    function updateApiKeyStatusUI() {
+      const hasKey = Boolean((state.geminiApiKey || '').trim());
+      const headerPill = document.getElementById('header-api-status');
+      const headerDot = document.getElementById('header-api-dot');
+      const headerLabel = document.getElementById('header-api-label');
+      const cardBadge = document.getElementById('api-badge-status');
+
+      if (hasKey) {
+        headerPill.className = 'inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-900 border border-emerald-200 hover:bg-emerald-100 transition cursor-pointer';
+        headerDot.className = 'w-2 h-2 rounded-full bg-emerald-600';
+        headerLabel.textContent = 'Gemini AI Aktif';
+        cardBadge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300';
+        cardBadge.textContent = 'Tersambung';
+      } else {
+        headerPill.className = 'inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100 transition cursor-pointer';
+        headerDot.className = 'w-2 h-2 rounded-full bg-amber-500';
+        headerLabel.textContent = 'Set API Key';
+        cardBadge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200';
+        cardBadge.textContent = 'Belum Diatur';
+      }
+    }
+
+    function loadSavedApiKeyAndDrafts() {
+      try {
+        const savedKey = localStorage.getItem(STORAGE_KEYS.API_KEY) || '';
+        const savedModel = localStorage.getItem(STORAGE_KEYS.MODEL) || 'gemini-2.5-flash';
+        const savedDraftsRaw = localStorage.getItem(STORAGE_KEYS.DRAFTS);
+
+        state.geminiApiKey = savedKey;
+        state.geminiModel = savedModel;
+        state.drafts = savedDraftsRaw ? JSON.parse(savedDraftsRaw) : [];
+      } catch (err) {
+        console.warn('LocalStorage tidak tersedia:', err);
+      }
+
+      document.getElementById('input-gemini-key').value = state.geminiApiKey;
+      document.getElementById('select-gemini-model').value = state.geminiModel;
+      updateApiKeyStatusUI();
+      renderDraftsList();
+    }
+
+    function saveApiKeyToStorage() {
+      const rawKey = (document.getElementById('input-gemini-key').value || '').trim();
+      const selectedModel = document.getElementById('select-gemini-model').value || 'gemini-2.5-flash';
+
+      if (!rawKey) {
+        showToast('Masukkan API Key Gemini terlebih dahulu sebelum menyimpan.', 'warning');
+        document.getElementById('input-gemini-key').focus();
+        return;
+      }
+
+      state.geminiApiKey = rawKey;
+      state.geminiModel = selectedModel;
+
+      try {
+        localStorage.setItem(STORAGE_KEYS.API_KEY, rawKey);
+        localStorage.setItem(STORAGE_KEYS.MODEL, selectedModel);
+      } catch (err) {
+        console.warn('Gagal menyimpan ke localStorage:', err);
+      }
+
+      updateApiKeyStatusUI();
+      showToast('API Key Gemini berhasil disimpan di perangkat!', 'success');
+    }
+
+    function deleteApiKeyFromStorage() {
+      state.geminiApiKey = '';
+      document.getElementById('input-gemini-key').value = '';
+      try {
+        localStorage.removeItem(STORAGE_KEYS.API_KEY);
+      } catch (err) {
+        console.warn(err);
+      }
+      updateApiKeyStatusUI();
+      showToast('API Key Gemini telah dihapus dari perangkat.', 'info');
+    }
+
+    async function testGeminiConnection() {
+      const rawKey = (document.getElementById('input-gemini-key').value || state.geminiApiKey || '').trim();
+      const model = document.getElementById('select-gemini-model').value || 'gemini-2.5-flash';
+
+      if (!rawKey) {
+        showToast('Isi API Key Gemini terlebih dahulu untuk mengetes koneksi.', 'warning');
+        return;
+      }
+
+      const btn = document.getElementById('btn-test-api-key');
+      const originalHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span>Menguji...</span>';
+
+      try {
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(rawKey)}`;
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: 'Balas dengan satu kata: SIAP' }] }]
+          })
+        });
+
+        const payload = await response.json();
+        if (!response.ok) {
+          const msg = payload?.error?.message || `HTTP ${response.status}`;
+          throw new Error(msg);
+        }
+
+        state.geminiApiKey = rawKey;
+        state.geminiModel = model;
+        localStorage.setItem(STORAGE_KEYS.API_KEY, rawKey);
+        localStorage.setItem(STORAGE_KEYS.MODEL, model);
+        updateApiKeyStatusUI();
+        showToast(`Koneksi ke ${model} berhasil & API Key tersimpan!`, 'success');
+      } catch (err) {
+        console.error(err);
+        showToast(`Koneksi gagal: ${err.message}`, 'warning');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+        lucide.createIcons({ nodes: [btn] });
+      }
+    }
+
+    async function generateCarouselWithGemini() {
+      const apiKey = (document.getElementById('input-gemini-key').value || state.geminiApiKey || '').trim();
+      const model = document.getElementById('select-gemini-model').value || 'gemini-2.5-flash';
+      const userPrompt = (document.getElementById('input-ai-prompt').value || '').trim();
+      const styleChoice = document.getElementById('select-ai-style').value || 'Penasaran & Storytelling';
+      const quoteSlideTarget = document.getElementById('select-ai-quote-count').value || '2';
+
+      if (!apiKey) {
+        showToast('Masukkan & simpan Google Gemini API Key Anda terlebih dahulu!', 'warning');
+        document.getElementById('input-gemini-key').focus();
+        return;
+      }
+
+      if (!userPrompt) {
+        showToast('Tulis topik hadits atau tempelkan teks hadits terlebih dahulu.', 'warning');
+        document.getElementById('input-ai-prompt').focus();
+        return;
+      }
+
+      const btn = document.getElementById('btn-generate-ai');
+      const label = document.getElementById('ai-btn-label');
+      const originalLabel = label.textContent;
+
+      btn.disabled = true;
+      label.textContent = 'AI Sedang Meracik Carousel...';
+
+      const systemInstruction = `Anda adalah kreator konten dakwah Islami & copywriter carousel Instagram/TikTok berbahasa Indonesia yang ahli dalam psikologi retensi audiens dan ilmu hadits.
+Tugas Anda: Ubah input hadits atau topik hadits dari pengguna menjadi naskah carousel Islami yang terstruktur, menyentuh hati, memicu rasa penasaran untuk terus digeser (swipe) dari slide pertama hingga akhir, dan tetap menjaga keotentikan matan serta sanad hadits.
+
+Aturan penting:
+1. Gunakan tanda ==kata kunci== untuk menyoroti 1-2 frasa terpenting pada hookHeadline, coreQuotes, dan indonesianText agar tampil menonjol secara visual.
+2. Pada coreQuotes, buat tepat ${quoteSlideTarget} slide kutipan/refleksi pemantik rasa penasaran SEBELUM dalil hadits utama ditampilkan. Jika lebih dari 1 slide, pisahkan antar slide dengan '\\n---\\n'.
+3. Pilih tema visual ('theme') yang paling sesuai dengan suasana hadits:
+   - 'zamrud': tema klasik, niat, keutamaan ibadah umum, ilmu
+   - 'andalusia': sejarah, adab, muamalah hangat, keluarga
+   - 'lailatul': tahajud, doa, akhirat, ketakwaan malam
+   - 'madinah': kelembutan hati, syukur, sedekah, senyum, ketenangan
+   - 'editorial': muhasabah mendalam, peringatan tegas, pengendalian amarah
+4. Pastikan arabicText memuat teks Arab asli hadits lengkap dengan harakat yang benar (jika hadits shahih/hasan yang dikenal), indonesianText memuat terjemahan Indonesia yang akurat, dan narrator memuat perawi yang tepat (misal: 'HR. Bukhari No. 1 & Muslim No. 1907').`;
+
+      const responseSchema = {
+        type: 'OBJECT',
+        properties: {
+          theme: {
+            type: 'STRING',
+            enum: ['zamrud', 'andalusia', 'lailatul', 'madinah', 'editorial']
+          },
+          seriesBadge: { type: 'STRING' },
+          categoryBadge: { type: 'STRING' },
+          hookHeadline: { type: 'STRING' },
+          hookSubtitle: { type: 'STRING' },
+          coreQuotes: { type: 'STRING' },
+          bridgeText: { type: 'STRING' },
+          arabicText: { type: 'STRING' },
+          indonesianText: { type: 'STRING' },
+          narrator: { type: 'STRING' },
+          hikmahList: {
+            type: 'ARRAY',
+            items: { type: 'STRING' }
+          },
+          closingCta: { type: 'STRING' }
+        },
+        required: [
+          'theme',
+          'seriesBadge',
+          'categoryBadge',
+          'hookHeadline',
+          'hookSubtitle',
+          'coreQuotes',
+          'bridgeText',
+          'arabicText',
+          'indonesianText',
+          'narrator',
+          'hikmahList',
+          'closingCta'
+        ]
+      };
+
+      try {
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemInstruction: {
+              parts: [{ text: systemInstruction }]
+            },
+            contents: [
+              {
+                parts: [
+                  {
+                    text: `Gaya bahasa: ${styleChoice}.\nJumlah slide kutipan inti sebelum dalil: ${quoteSlideTarget}.\n\nInput Hadits / Topik:\n${userPrompt}`
+                  }
+                ]
+              }
+            ],
+            generationConfig: {
+              temperature: 0.75,
+              responseMimeType: 'application/json',
+              responseSchema
+            }
+          })
+        });
+
+        const payload = await res.json();
+        if (!res.ok) {
+          const errMsg = payload?.error?.message || `HTTP Error ${res.status}`;
+          throw new Error(errMsg);
+        }
+
+        const rawJsonText = payload?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!rawJsonText) {
+          throw new Error('Respons AI kosong. Silakan coba lagi.');
+        }
+
+        const data = JSON.parse(rawJsonText);
+
+        // Map theme ('editorial' maps cleanly to 'hikmah')
+        const themeMap = {
+          zamrud: 'zamrud',
+          andalusia: 'andalusia',
+          lailatul: 'lailatul',
+          madinah: 'madinah',
+          editorial: 'hikmah',
+          hikmah: 'hikmah'
+        };
+
+        state.themeId = themeMap[data.theme] || 'zamrud';
+        state.series = data.seriesBadge || 'SERI TADABBUR';
+        state.category = data.categoryBadge || 'RENUNGAN';
+        state.hookTitle = data.hookHeadline || state.hookTitle;
+        state.hookSubtitle = data.hookSubtitle || '';
+        state.includePreQuotes = Boolean((data.coreQuotes || '').trim());
+        state.preQuotes = data.coreQuotes || '';
+        state.quoteBridge = data.bridgeText || 'Simak sabda Rasulullah ﷺ berikut →';
+        state.arabic = data.arabicText || '';
+        state.showArabic = Boolean((data.arabicText || '').trim());
+        state.translation = data.indonesianText || '';
+        state.source = data.narrator || 'Hadits Shahih';
+
+        const hikmahItems = Array.isArray(data.hikmahList) ? data.hikmahList.filter(Boolean) : [];
+        state.includeHikmah = hikmahItems.length > 0;
+        state.hikmah = hikmahItems.join('\n');
+
+        // Split closingCta into reflection question and save/share CTA
+        const closingRaw = (data.closingCta || '').trim();
+        const qIdx = closingRaw.indexOf('?');
+        if (qIdx !== -1) {
+          state.closingQuestion = closingRaw.slice(0, qIdx + 1).trim();
+          const rest = closingRaw.slice(qIdx + 1).trim();
+          state.cta = rest || 'Simpan postingan ini sebagai pengingat diri & bagikan ke orang tersayang.';
+        } else {
+          state.closingQuestion = closingRaw || 'Sudahkah kita mengamalkan pesan mulia ini hari ini?';
+          state.cta = 'Simpan postingan ini sebagai pengingat diri & bagikan ke orang tersayang.';
+        }
+        state.includeClosing = true;
+        state.currentSlideIndex = 0;
+
+        // Save API key if user typed it right before generating
+        if (!state.geminiApiKey) {
+          state.geminiApiKey = apiKey;
+          localStorage.setItem(STORAGE_KEYS.API_KEY, apiKey);
+          updateApiKeyStatusUI();
+        }
+
+        syncInputsFromState();
+        renderWorkspace();
+        saveCurrentCarouselToDrafts(true);
+
+        showToast('Carousel Islami otomatis berhasil dibuat oleh Gemini AI!', 'success');
+
+        // On mobile screens, switch straight to Preview & Export view so user sees the result immediately
+        if (window.innerWidth < 1024) {
+          switchMobileSection('preview');
+        }
+      } catch (err) {
+        console.error('Gemini Generate Error:', err);
+        showToast(`Gagal generate AI: ${err.message}`, 'warning');
+      } finally {
+        btn.disabled = false;
+        label.textContent = originalLabel;
+      }
+    }
+
+    function saveCurrentCarouselToDrafts(silent = false) {
+      try {
+        const draftEntry = {
+          id: Date.now(),
+          createdAt: new Date().toLocaleDateString('id-ID', {
+            day: '2-digit',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit'
+          }),
+          title: (state.hookTitle || 'Carousel Hadits').replace(/==/g, '').slice(0, 68),
+          category: state.category || 'RENUNGAN',
+          themeId: state.themeId,
+          snapshot: {
+            category: state.category,
+            series: state.series,
+            hookTitle: state.hookTitle,
+            hookSubtitle: state.hookSubtitle,
+            hookCta: state.hookCta,
+            includePreQuotes: state.includePreQuotes,
+            preQuotes: state.preQuotes,
+            quoteBridge: state.quoteBridge,
+            arabic: state.arabic,
+            showArabic: state.showArabic,
+            translation: state.translation,
+            source: state.source,
+            includeHikmah: state.includeHikmah,
+            hikmah: state.hikmah,
+            includeClosing: state.includeClosing,
+            closingQuestion: state.closingQuestion,
+            cta: state.cta,
+            watermark: state.watermark,
+            themeId: state.themeId,
+            aspectRatio: state.aspectRatio
+          }
+        };
+
+        state.drafts = [draftEntry, ...(state.drafts || [])].slice(0, 20);
+        localStorage.setItem(STORAGE_KEYS.DRAFTS, JSON.stringify(state.drafts));
+        renderDraftsList();
+        if (!silent) {
+          showToast('Carousel disimpan ke Riwayat Draf Lokal!', 'success');
+        }
+      } catch (err) {
+        console.warn('Gagal menyimpan draf:', err);
+      }
+    }
+
+    function loadDraftById(draftId) {
+      const found = (state.drafts || []).find(d => d.id === draftId);
+      if (!found || !found.snapshot) return;
+
+      Object.assign(state, found.snapshot);
+      state.currentSlideIndex = 0;
+      syncInputsFromState();
+      renderWorkspace();
+      showToast('Draf berhasil dimuat!', 'success');
+
+      if (window.innerWidth < 1024) {
+        switchMobileSection('preview');
+      }
+    }
+
+    function deleteDraftById(draftId) {
+      state.drafts = (state.drafts || []).filter(d => d.id !== draftId);
+      try {
+        localStorage.setItem(STORAGE_KEYS.DRAFTS, JSON.stringify(state.drafts));
+      } catch (err) {
+        console.warn(err);
+      }
+      renderDraftsList();
+      showToast('Draf dihapus.', 'info');
+    }
+
+    function renderDraftsList() {
+      const container = document.getElementById('drafts-list');
+      if (!container) return;
+
+      if (!state.drafts || state.drafts.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-4 px-3 text-[11px] text-slate-400">
+            Belum ada draf tersimpan. Hasil generasi AI atau tombol <strong>Simpan Draf</strong> akan otomatis muncul di sini untuk akses offline.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = state.drafts
+        .map(d => {
+          const themeObj = ISLAMIC_THEMES[d.themeId] || ISLAMIC_THEMES.zamrud;
+          return `
+            <div class="flex items-center justify-between gap-2.5 p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 transition">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <span class="w-3.5 h-3.5 rounded-full shrink-0 border border-black/15" style="background: ${themeObj.swatchBg};"></span>
+                <div class="min-w-0">
+                  <div class="text-xs font-bold text-slate-800 truncate">${escapeHtml(d.title)}</div>
+                  <div class="text-[10px] text-slate-500 truncate">${escapeHtml(d.category)} • ${escapeHtml(d.createdAt)}</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-1 shrink-0">
+                <button type="button" onclick="loadDraftById(${d.id})" class="px-2.5 py-1 rounded-lg bg-white hover:bg-emerald-900 text-emerald-900 hover:text-white border border-slate-200 text-[11px] font-semibold transition cursor-pointer">
+                  Muat
+                </button>
+                <button type="button" onclick="deleteDraftById(${d.id})" title="Hapus Draf" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 transition cursor-pointer">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+          `;
+        })
+        .join('');
+
+      lucide.createIcons({ nodes: [container] });
+    }
+
+    function switchEditorTab(target) {
+      state.activeTab = target;
+
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        const isActive = b.dataset.tab === target;
+        b.classList.toggle('border-emerald-800', isActive);
+        b.classList.toggle('text-emerald-900', isActive);
+        b.classList.toggle('bg-emerald-50/40', isActive);
+        b.classList.toggle('font-semibold', isActive);
+        b.classList.toggle('border-transparent', !isActive);
+        b.classList.toggle('text-slate-500', !isActive);
+        b.classList.toggle('font-medium', !isActive);
+      });
+
+      document.getElementById('panel-ai').classList.toggle('hidden', target !== 'ai');
+      document.getElementById('panel-story').classList.toggle('hidden', target !== 'story');
+      document.getElementById('panel-design').classList.toggle('hidden', target !== 'design');
+    }
+
+    function switchMobileSection(section) {
+      const sidebar = document.getElementById('editor-sidebar');
+      const workspace = sidebar.nextElementSibling;
+
+      document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+        const isActive = btn.dataset.mobileNav === section;
+        btn.classList.toggle('text-emerald-900', isActive);
+        btn.classList.toggle('font-bold', isActive);
+        btn.classList.toggle('text-slate-500', !isActive);
+        btn.classList.toggle('font-medium', !isActive);
+      });
+
+      if (window.innerWidth >= 1024) {
+        sidebar.classList.remove('hidden');
+        workspace.classList.remove('hidden');
+        return;
+      }
+
+      if (section === 'preview') {
+        sidebar.classList.add('hidden');
+        workspace.classList.remove('hidden');
+        renderWorkspace();
+      } else {
+        workspace.classList.add('hidden');
+        sidebar.classList.remove('hidden');
+        if (section === 'design') {
+          switchEditorTab('design');
+        } else if (state.activeTab === 'design') {
+          switchEditorTab('ai');
+        }
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // 11. UI CONTROLS & INTERACTIVE SWIPE GESTURES
+    function renderPresetButtons() {
+      const container = document.getElementById('preset-buttons');
+      container.innerHTML = STORY_PRESETS.map(
+        p => `
+        <button
+          type="button"
+          data-preset-id="${p.id}"
+          class="preset-pill px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-900 border border-slate-200 hover:border-emerald-300 shadow-2xs transition cursor-pointer"
+        >
+          ${escapeHtml(p.label)}
+        </button>
+      `
+      ).join('');
+
+      container.querySelectorAll('.preset-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const preset = STORY_PRESETS.find(item => item.id === btn.dataset.presetId);
+          if (!preset) return;
+
+          state.category = preset.category;
+          state.series = preset.series;
+          state.hookTitle = preset.hookTitle;
+          state.hookSubtitle = preset.hookSubtitle;
+          state.hookCta = preset.hookCta;
+          state.includePreQuotes = true;
+          state.preQuotes = preset.preQuotes;
+          state.quoteBridge = preset.quoteBridge;
+          state.arabic = preset.arabic;
+          state.translation = preset.translation;
+          state.source = preset.source;
+          state.includeHikmah = true;
+          state.hikmah = preset.hikmah;
+          state.includeClosing = true;
+          state.closingQuestion = preset.closingQuestion;
+          state.cta = preset.cta;
+          state.watermark = preset.watermark;
+          state.currentSlideIndex = 0;
+
+          syncInputsFromState();
+          renderWorkspace();
+          showToast(`Template "${preset.label}" dimuat.`, 'success');
+        });
+      });
+    }
+
+    function renderThemeCards() {
+      const grid = document.getElementById('theme-grid');
+      grid.innerHTML = Object.values(ISLAMIC_THEMES)
+        .map(t => {
+          const isSelected = state.themeId === t.id;
+          return `
+            <button
+              type="button"
+              data-theme-id="${t.id}"
+              class="theme-card flex flex-col justify-between p-3 rounded-2xl border-2 text-left transition cursor-pointer ${
+                isSelected
+                  ? 'border-emerald-800 bg-emerald-50/50 shadow-xs'
+                  : 'border-slate-200 hover:border-slate-300 bg-white'
+              }"
+            >
+              <div class="flex items-center justify-between w-full mb-2">
+                <div class="flex items-center gap-1.5">
+                  <span class="w-5 h-5 rounded-full border border-black/15 shadow-inner" style="background: ${t.swatchBg};"></span>
+                  <span class="w-4 h-4 rounded-full border border-black/15 -ml-2" style="background: ${t.swatchAccent};"></span>
+                </div>
+                ${
+                  isSelected
+                    ? '<span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-900 text-white">Aktif</span>'
+                    : ''
+                }
+              </div>
+              <div>
+                <div class="text-xs font-bold text-slate-900">${t.name}</div>
+                <div class="text-[11px] text-slate-500 leading-snug mt-0.5">${t.desc}</div>
+              </div>
+            </button>
+          `;
+        })
+        .join('');
+
+      grid.querySelectorAll('.theme-card').forEach(card => {
+        card.addEventListener('click', () => {
+          state.themeId = card.dataset.themeId;
+          renderThemeCards();
+          renderWorkspace();
+        });
+      });
+    }
+
+    function syncInputsFromState() {
+      document.getElementById('input-category').value = state.category;
+      document.getElementById('input-series').value = state.series;
+      document.getElementById('input-hook-title').value = state.hookTitle;
+      document.getElementById('input-hook-subtitle').value = state.hookSubtitle;
+      document.getElementById('input-hook-cta').value = state.hookCta;
+
+      document.getElementById('toggle-prequotes').checked = state.includePreQuotes;
+      document.getElementById('input-prequotes').value = state.preQuotes;
+      document.getElementById('input-quote-bridge').value = state.quoteBridge;
+
+      document.getElementById('input-arabic').value = state.arabic;
+      document.getElementById('toggle-arabic').checked = state.showArabic;
+      document.getElementById('input-translation').value = state.translation;
+      document.getElementById('slider-chars-per-slide').value = state.charsPerSlide;
+      document.getElementById('val-chars-per-slide').textContent = `${state.charsPerSlide} kar`;
+      document.getElementById('input-source').value = state.source;
+
+      document.getElementById('toggle-hikmah').checked = state.includeHikmah;
+      document.getElementById('input-hikmah').value = state.hikmah;
+      document.getElementById('toggle-closing').checked = state.includeClosing;
+      document.getElementById('input-closing-question').value = state.closingQuestion;
+      document.getElementById('input-cta').value = state.cta;
+      document.getElementById('input-watermark').value = state.watermark;
+
+      document.getElementById('select-arabic-font').value = state.arabicFont;
+      document.getElementById('select-latin-font').value = state.latinFont;
+      document.getElementById('slider-arabic-size').value = state.arabicSize;
+      document.getElementById('val-arabic-size').textContent = `${state.arabicSize} px`;
+      document.getElementById('slider-latin-size').value = state.latinSize;
+      document.getElementById('val-latin-size').textContent = `${state.latinSize} px`;
+
+      document.getElementById('toggle-progress-bar').checked = state.showProgressBar;
+      document.getElementById('toggle-bismillah').checked = state.showBismillah;
+      document.getElementById('toggle-swipe-bridge').checked = state.showSwipeBridge;
+
+      document.querySelectorAll('.ratio-btn').forEach(btn => {
+        const active = btn.dataset.ratio === state.aspectRatio;
+        btn.classList.toggle('border-emerald-800', active);
+        btn.classList.toggle('bg-emerald-50/60', active);
+        btn.classList.toggle('border-slate-200', !active);
+        btn.classList.toggle('bg-white', !active);
+      });
+
+      renderThemeCards();
+    }
+
+    function bindEvents() {
+      // Tab switching (AI & API Key | Edit Teks | Tema & Gaya)
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          switchEditorTab(btn.dataset.tab);
+        });
+      });
+
+      // Header API Key Status Pill -> jump to AI & API Key tab
+      document.getElementById('header-api-status').addEventListener('click', () => {
+        switchEditorTab('ai');
+        if (window.innerWidth < 1024) {
+          switchMobileSection('ai');
+        }
+        document.getElementById('input-gemini-key').focus();
+      });
+
+      // APK Guide Modal controls
+      document.getElementById('btn-open-apk-guide').addEventListener('click', () => {
+        document.getElementById('apk-guide-modal').classList.remove('hidden');
+      });
+      document.getElementById('btn-close-apk-guide').addEventListener('click', () => {
+        document.getElementById('apk-guide-modal').classList.add('hidden');
+      });
+      document.getElementById('apk-guide-modal').addEventListener('click', e => {
+        if (e.target.id === 'apk-guide-modal') {
+          document.getElementById('apk-guide-modal').classList.add('hidden');
+        }
+      });
+      document.getElementById('btn-copy-capacitor-cmd').addEventListener('click', () => {
+        const cmdText = document.getElementById('capacitor-commands-text').textContent;
+        copyTextToClipboard(cmdText, 'Perintah build APK Capacitor berhasil disalin!');
+      });
+
+      // Gemini API Key controls
+      document.getElementById('btn-toggle-key-visibility').addEventListener('click', () => {
+        const input = document.getElementById('input-gemini-key');
+        input.type = input.type === 'password' ? 'text' : 'password';
+      });
+      document.getElementById('btn-save-api-key').addEventListener('click', saveApiKeyToStorage);
+      document.getElementById('btn-test-api-key').addEventListener('click', testGeminiConnection);
+      document.getElementById('btn-delete-api-key').addEventListener('click', deleteApiKeyFromStorage);
+      document.getElementById('select-gemini-model').addEventListener('change', e => {
+        state.geminiModel = e.target.value;
+        try {
+          localStorage.setItem(STORAGE_KEYS.MODEL, state.geminiModel);
+        } catch (err) {
+          console.warn(err);
+        }
+      });
+
+      // AI Auto-Generator & Drafts controls
+      document.getElementById('btn-generate-ai').addEventListener('click', generateCarouselWithGemini);
+      document.getElementById('btn-save-draft').addEventListener('click', () => saveCurrentCarouselToDrafts(false));
+
+      // Native Share / Gallery button
+      document.getElementById('btn-share-native').addEventListener('click', shareSlidesNative);
+
+      // Android Mobile Bottom Navigation Bar
+      document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          switchMobileSection(btn.dataset.mobileNav);
+        });
+      });
+
+      // Preview Mode switching
+      document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => setPreviewMode(btn.dataset.previewMode));
+      });
+
+      // Hook Cover inputs
+      document.getElementById('input-category').addEventListener('input', e => {
+        state.category = e.target.value;
+        renderWorkspace();
+      });
+      document.getElementById('input-series').addEventListener('input', e => {
+        state.series = e.target.value;
+        renderWorkspace();
+      });
+      document.getElementById('input-hook-title').addEventListener('input', e => {
+        state.hookTitle = e.target.value;
+        renderWorkspace();
+      });
+      document.getElementById('input-hook-subtitle').addEventListener('input', e => {
+        state.hookSubtitle = e.target.value;
+        renderWorkspace();
+      });
+      document.getElementById('input-hook-cta').addEventListener('input', e => {
+        state.hookCta = e.target.value;
+        renderWorkspace();
+      });
+
+      // Pre-Dalil Quote inputs
+      document.getElementById('toggle-prequotes').addEventListener('change', e => {
+        state.includePreQuotes = e.target.checked;
+        renderWorkspace();
+      });
+      document.getElementById('input-prequotes').addEventListener('input', e => {
+        state.preQuotes = e.target.value;
+        renderWorkspace();
+      });
+      document.getElementById('input-quote-bridge').addEventListener('input', e => {
+        state.quoteBridge = e.target.value;
+        renderWorkspace();
+      });
+
+      // Dalil inputs
+      document.getElementById('input-arabic').addEventListener('input', e => {
+        state.arabic = e.target.value;
+        renderWorkspace();
+      });
+      document.getElementById('toggle-arabic').addEventListener('change', e => {
+        state.showArabic = e.target.checked;
+        renderWorkspace();
+      });
+      document.getElementById('input-translation').addEventListener('input', e => {
+        state.translation = e.target.value;
+        renderWorkspace();
+      });
+      document.getElementById('slider-chars-per-slide').addEventListener('input', e => {
+        state.charsPerSlide = parseInt(e.target.value, 10);
+        document.getElementById('val-chars-per-slide').textContent = `${state.charsPerSlide} kar`;
+        renderWorkspace();
+      });
+      document.getElementById('input-source').addEventListener('input', e => {
+        state.source = e.target.value;
+        renderWorkspace();
+      });
+
+      // Hikmah & Closing inputs
+      document.getElementById('toggle-hikmah').addEventListener('change', e => {
+        state.includeHikmah = e.target.checked;
+        renderWorkspace();
+      });
+      document.getElementById('input-hikmah').addEventListener('input', e => {
+        state.hikmah = e.target.value;
+        renderWorkspace();
+      });
+      document.getElementById('toggle-closing').addEventListener('change', e => {
+        state.includeClosing = e.target.checked;
+        renderWorkspace();
+      });
+      document.getElementById('input-closing-question').addEventListener('input', e => {
+        state.closingQuestion = e.target.value;
+        renderWorkspace();
+      });
+      document.getElementById('input-cta').addEventListener('input', e => {
+        state.cta = e.target.value;
+        renderWorkspace();
+      });
+      document.getElementById('input-watermark').addEventListener('input', e => {
+        state.watermark = e.target.value;
+        renderWorkspace();
+      });
+
+      // Design & Typography controls
+      document.querySelectorAll('.ratio-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.aspectRatio = btn.dataset.ratio;
+          syncInputsFromState();
+          renderWorkspace();
+        });
+      });
+
+      document.getElementById('select-arabic-font').addEventListener('change', e => {
+        state.arabicFont = e.target.value;
+        renderWorkspace();
+      });
+      document.getElementById('select-latin-font').addEventListener('change', e => {
+        state.latinFont = e.target.value;
+        renderWorkspace();
+      });
+      document.getElementById('slider-arabic-size').addEventListener('input', e => {
+        state.arabicSize = parseInt(e.target.value, 10);
+        document.getElementById('val-arabic-size').textContent = `${state.arabicSize} px`;
+        renderWorkspace();
+      });
+      document.getElementById('slider-latin-size').addEventListener('input', e => {
+        state.latinSize = parseInt(e.target.value, 10);
+        document.getElementById('val-latin-size').textContent = `${state.latinSize} px`;
+        renderWorkspace();
+      });
+
+      document.getElementById('toggle-progress-bar').addEventListener('change', e => {
+        state.showProgressBar = e.target.checked;
+        renderWorkspace();
+      });
+      document.getElementById('toggle-bismillah').addEventListener('change', e => {
+        state.showBismillah = e.target.checked;
+        renderWorkspace();
+      });
+      document.getElementById('toggle-swipe-bridge').addEventListener('change', e => {
+        state.showSwipeBridge = e.target.checked;
+        renderWorkspace();
+      });
+
+      // Simulator Prev/Next buttons
+      document.getElementById('sim-prev-btn').addEventListener('click', () => {
+        goToSlide(state.currentSlideIndex - 1);
+      });
+      document.getElementById('sim-next-btn').addEventListener('click', () => {
+        goToSlide(state.currentSlideIndex + 1);
+      });
+
+      // Touch & Mouse Swipe Gesture on Simulator Viewport
+      const touchSurface = document.getElementById('sim-touch-surface');
+      let dragStartX = 0;
+      let isDragging = false;
+
+      touchSurface.addEventListener('touchstart', e => {
+        if (e.touches && e.touches.length > 0) {
+          dragStartX = e.touches[0].clientX;
+        }
+      }, { passive: true });
+
+      touchSurface.addEventListener('touchend', e => {
+        if (e.changedTouches && e.changedTouches.length > 0) {
+          const deltaX = e.changedTouches[0].clientX - dragStartX;
+          if (Math.abs(deltaX) > 38) {
+            if (deltaX < 0) goToSlide(state.currentSlideIndex + 1);
+            else goToSlide(state.currentSlideIndex - 1);
+          }
+        }
+      }, { passive: true });
+
+      touchSurface.addEventListener('mousedown', e => {
+        isDragging = true;
+        dragStartX = e.clientX;
+      });
+
+      window.addEventListener('mouseup', e => {
+        if (!isDragging) return;
+        isDragging = false;
+        const deltaX = e.clientX - dragStartX;
+        if (Math.abs(deltaX) > 45) {
+          if (deltaX < 0) goToSlide(state.currentSlideIndex + 1);
+          else goToSlide(state.currentSlideIndex - 1);
+        }
+      });
+
+      // Keyboard Left/Right Arrow navigation (when not typing in inputs)
+      window.addEventListener('keydown', e => {
+        const tag = (document.activeElement && document.activeElement.tagName) || '';
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+        if (state.previewMode !== 'simulator') return;
+
+        if (e.key === 'ArrowRight') {
+          goToSlide(state.currentSlideIndex + 1);
+        } else if (e.key === 'ArrowLeft') {
+          goToSlide(state.currentSlideIndex - 1);
+        }
+      });
+
+      // Mock Like & Bookmark toggle in Simulator
+      document.getElementById('sim-like-btn').addEventListener('click', function () {
+        state.simLiked = !state.simLiked;
+        this.classList.toggle('text-rose-600', state.simLiked);
+        this.classList.toggle('text-slate-700', !state.simLiked);
+        const svg = this.querySelector('svg');
+        if (svg) svg.setAttribute('fill', state.simLiked ? 'currentColor' : 'none');
+      });
+
+      document.getElementById('sim-save-btn').addEventListener('click', function () {
+        state.simSaved = !state.simSaved;
+        this.classList.toggle('text-amber-600', state.simSaved);
+        this.classList.toggle('text-slate-700', !state.simSaved);
+        const svg = this.querySelector('svg');
+        if (svg) svg.setAttribute('fill', state.simSaved ? 'currentColor' : 'none');
+      });
+
+      // Grid Zoom Controls
+      document.getElementById('btn-zoom-in').addEventListener('click', () => {
+        state.zoom = Math.min(1.0, +(state.zoom + 0.1).toFixed(2));
+        renderWorkspace();
+      });
+      document.getElementById('btn-zoom-out').addEventListener('click', () => {
+        state.zoom = Math.max(0.4, +(state.zoom - 0.1).toFixed(2));
+        renderWorkspace();
+      });
+
+      // Exports & Reset
+      document.getElementById('btn-download-current').addEventListener('click', () => {
+        downloadSingleSlide(state.currentSlideIndex);
+      });
+      document.getElementById('btn-download-zip').addEventListener('click', downloadAllAsZip);
+      document.getElementById('btn-reset').addEventListener('click', () => {
+        const preservedKey = state.geminiApiKey;
+        const preservedModel = state.geminiModel;
+        const preservedDrafts = state.drafts;
+        state = {
+          ...defaultState,
+          geminiApiKey: preservedKey,
+          geminiModel: preservedModel,
+          drafts: preservedDrafts
+        };
+        syncInputsFromState();
+        renderWorkspace();
+        showToast('Pengaturan dikembalikan ke awal.', 'info');
+      });
+
+      // Re-scale simulator cleanly on window resize
+      window.addEventListener('resize', () => {
+        if (window.innerWidth >= 1024) {
+          document.getElementById('editor-sidebar').classList.remove('hidden');
+          document.getElementById('editor-sidebar').nextElementSibling.classList.remove('hidden');
+        }
+        if (state.previewMode === 'simulator') {
+          renderWorkspace();
+        }
+      });
+    }
+
+    // Initialize Application
+    window.addEventListener('DOMContentLoaded', () => {
+      if (window.innerWidth < 640) {
+        state.zoom = 0.50;
+      }
+
+      loadSavedApiKeyAndDrafts();
+      renderPresetButtons();
+      syncInputsFromState();
+      bindEvents();
+      switchEditorTab('ai');
+      if (window.innerWidth < 1024) {
+        switchMobileSection('ai');
+      }
+      renderWorkspace();
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>
+```
